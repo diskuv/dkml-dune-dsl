@@ -9,7 +9,8 @@ module Build (I : Dune.SYM) = struct
         [
           target "somefile.txt";
           action
-            (with_stdout_to "%{target}" (echo [ "hello"; "to all the fish" ]));
+            (with_stdout_to "%{target}"
+               (echo [ "hello"; "to all the fish"; "and let () = ()" ]));
         ];
     ]
 end

@@ -29,4 +29,4 @@
   (run
    ../test-support/assert_file_contains.exe
    %{dep:somefile.txt}
-   "hello to all the fish")))
+   "hello to all the fish and let () = ()")))

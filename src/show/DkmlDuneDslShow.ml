@@ -126,8 +126,7 @@ end
 
 (* Pretty printers *)
 
-let plain_hum_config =
-  Sexp_pretty.Config.create ~color:false ~interpret_atom_as_sexp:true ()
+let plain_hum_config = Sexp_pretty.Config.create ~color:false ()
 
 let pretty = Sexp_pretty.Config.default
 
