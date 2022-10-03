@@ -42,6 +42,8 @@ module I :
 
   let executable l json = _list ([ _atom "executable" ] @ _spread json l)
 
+  let library l json = _list ([ _atom "library" ] @ _spread json l)
+
   let install l json = _list ([ _atom "install" ] @ _spread json l)
 
   (** {3 Rules} *)

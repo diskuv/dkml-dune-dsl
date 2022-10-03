@@ -15,7 +15,24 @@ module type SYM = sig
   val rule : [ `RuleClause ] repr list -> [ `Stanza ] repr
   (** The [rule [rule_clause1 ...]] stanza is used to create custom user rules. It tells Dune how to generate a specific set of files from a specific set of dependencies. *)
 
-  val executable : [ `Executable ] repr list -> [ `Stanza ] repr
+  val executable : [ `CommonExecutableLibrary ] repr list -> [ `Stanza ] repr
+  (** The [executable [name "<name>"; ...]] stanza must be used to describe an executable.
+      
+      ["<name>"] is a module name that contains the executable’s main entry point. There can be additional
+      modules in the current directory; you only need to specify the entry point. Given an executable
+      stanza with [name "<name>"; ...], Dune will know how to build ["<name>.exe"]. If requested, it will
+      also know how to build ["<name>.bc"] and ["<name>.bc.js"]. Dune 2.0 and up also need specific configuration
+      (see the {!modes} optional field below).
+  *)
+
+  val library : [ `CommonExecutableLibrary ] repr list -> [ `Stanza ] repr
+  (** The [library [name "<library-name>"; ...]] stanza must be used to describe OCaml libraries.
+  
+      ["<library-name>"] is the real name of the library. It determines the names of the archive files
+      generated for the library as well as the module name under which the library will be available,
+      unless [wrapped false] is used (see {!wrapped}). It must be a valid OCaml module name, but it doesn’t
+      need to start with an uppercase letter.
+  *)
 
   val install : [ `Install ] repr list -> [ `Stanza ] repr
 
@@ -52,19 +69,20 @@ module type SYM = sig
 
   val diff_q : actual:string -> expected:string -> [ `Action ] repr
 
-  (** {3 Executables} *)
+  (** {3 Executables and Libraries} *)
 
-  val public_name : string -> [ `Executable ] repr
+  val public_name : string -> [ `CommonExecutableLibrary ] repr
 
-  val name : string -> [ `Executable ] repr
+  val name : string -> [ `CommonExecutableLibrary ] repr
 
-  val libraries : string list -> [ `Executable ] repr
+  val libraries : string list -> [ `CommonExecutableLibrary ] repr
 
-  val modules : string list -> [ `Executable ] repr
+  val modules : string list -> [ `CommonExecutableLibrary ] repr
 
-  val modes_byte_exe : [ `Executable ] repr
+  val modes_byte_exe : [ `CommonExecutableLibrary ] repr
 
-  val ocamlopt_flags : [ `OCamlOptFlag ] repr list -> [ `Executable ] repr
+  val ocamlopt_flags :
+    [ `OCamlOptFlag ] repr list -> [ `CommonExecutableLibrary ] repr
 
   (** {3 Install} *)
 
