@@ -1,9 +1,27 @@
 {0 Dune DSL}
 
+A mini-language (DSL) for Dune files embedded in OCaml that produces readable, valid Dune include files. The
+mini-language closely matches the structure of a regular Dune file, and because it is embedded in OCaml
+you get OCaml type-safety and the power of your favorite OCaml IDE as you write your Dune files.
+
+The Dune DSL uses a tagless final design, so your Dune DSL can be interpreted in a variety of ways that
+are independent of Dune itself. The standard dkml-dune-dsl-show interpreter allows all of the Dune string
+values (executable names, rule targets, etc.) to be parameterized from external JSON files. That lets you
+produce many similar executables, libraries or assets using the same Dune logic without repeating yourself
+({{:https://en.wikipedia.org/wiki/Don%27t_repeat_yourself}DRY}).
+
 {1 Status}
 
 This is an early release. The author jonahbeckford@ put in enough Dune syntax for what he needed;
 if you want more, this project accepts PRs!
+
+There is at least one sharp edge:
+
++ If the version of Dune DSL you are using has a bug where it generates a syntactically incorrect Dune file,
+  Dune will stop the build (which is expected). However if you upgrade the Dune DSL which includes
+  a bug fix, Dune still will not be able to generated a corrected Dune file. You will need to truncate the
+  ["dune.inc"] file so that the file is completely empty; then Dune will be able to generate the correct
+  ["dune.inc"]. The situation is a classic chicken-and-egg because we let Dune generate its own include files.
 
 {1 Usage}
 
