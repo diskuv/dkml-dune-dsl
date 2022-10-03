@@ -36,7 +36,7 @@ end
   (target dune_inc.ml)
   (action
     (with-stdout-to %{target}
-      (echo &quot;module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_endline @@ DkmlDuneDslShow.plain_hum M.res \n&quot;))))
+      (echo &quot;module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n&quot;))))
 
 (executable
  (name dune_inc)
