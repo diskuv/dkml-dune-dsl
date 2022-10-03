@@ -5,12 +5,12 @@
   ...
   (dkml-dune-dsl (and (&gt;= 0.1.0) :build))
  )
-)</pre><h3 id="step-three---parameters"><a href="#step-three---parameters" class="anchor"></a>Step Three - Parameters</h3><p>An interpreter takes your Dune DSL expression and any command line arguments you supply to it, and performs some activity on it. In particular:</p><ul><li>the <b>dkml-dune-dsl.show</b> interpreter takes your Dune DSL expression and prints your DSL expression as a valid Dune file. The <b>dkml-dune-dsl.show</b> interpreter takes an <i>optional</i> parameters file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example)</li></ul><p>In what follows we will use the <b>dkml-dune-dsl.show</b> interpreter and give it a parameters file called <code>&quot;dune-parameters.json&quot;</code>:</p><pre>{
+)</pre><h3 id="step-three---parameters"><a href="#step-three---parameters" class="anchor"></a>Step Three - Parameters</h3><p>An interpreter takes your Dune DSL expression and any command line arguments you supply to it, and performs some activity on it. In particular:</p><ul><li>the <b>dkml-dune-dsl-show</b> interpreter takes your Dune DSL expression and prints your DSL expression as a valid Dune file. The <b>dkml-dune-dsl-show</b> interpreter takes an <i>optional</i> parameters file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example)</li></ul><p>In what follows we will use the <b>dkml-dune-dsl-show</b> interpreter and give it a parameters file called <code>&quot;dune-parameters.json&quot;</code>:</p><pre>{
   &quot;param-sets&quot;: [
     {&quot;name&quot;: &quot;batman&quot;, &quot;age&quot;: 39},
     {&quot;name&quot;: &quot;robin&quot;, &quot;age&quot;: 24}
   ]
-}</pre><p>(If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and perhaps a <code>glob_files</code> expression).</p><p>The example above has two parameter sets, which the <b>dkml-dune-dsl.show</b> interpreter will use to print your Dune DSL expression <b>twice</b> into the same file:</p><ol><li>The first print will replace all <code>&quot;{{ name }}&quot;</code> and <code>&quot;{{ age }}&quot;</code> strings with <code>&quot;batman&quot;</code> and <code>&quot;39&quot;</code>, respectively</li><li>The second print will replace all <code>&quot;{{ name }}&quot;</code> and <code>&quot;{{ age }}&quot;</code> strings with <code>&quot;robin&quot;</code> and <code>&quot;24&quot;</code>, respectively</li></ol><p>If you don't supply a parameters file to the <b>dkml-dune-dsl.show</b> interpreter it will print your Dune DSL expression literally without any <code>&quot;{{ ... }}&quot;</code> replacements.</p><h3 id="step-four---writing"><a href="#step-four---writing" class="anchor"></a>Step Four - Writing</h3><p>Write your Dune configuration file in the OCaml DSL language. For what follows, we'll assume it is called <code>&quot;my_dune.ml&quot;</code>:</p><p><code>
+}</pre><p>(If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and perhaps a <code>glob_files</code> expression).</p><p>The example above has two parameter sets, which the <b>dkml-dune-dsl-show</b> interpreter will use to print your Dune DSL expression <b>twice</b> into the same file:</p><ol><li>The first print will replace all <code>&quot;{{ name }}&quot;</code> and <code>&quot;{{ age }}&quot;</code> strings with <code>&quot;batman&quot;</code> and <code>&quot;39&quot;</code>, respectively</li><li>The second print will replace all <code>&quot;{{ name }}&quot;</code> and <code>&quot;{{ age }}&quot;</code> strings with <code>&quot;robin&quot;</code> and <code>&quot;24&quot;</code>, respectively</li></ol><p>If you don't supply a parameters file to the <b>dkml-dune-dsl-show</b> interpreter it will print your Dune DSL expression literally without any <code>&quot;{{ ... }}&quot;</code> replacements.</p><h3 id="step-four---writing"><a href="#step-four---writing" class="anchor"></a>Step Four - Writing</h3><p>Write your Dune configuration file in the OCaml DSL language. For what follows, we'll assume it is called <code>&quot;my_dune.ml&quot;</code>:</p><p><code>
 open DkmlDuneDsl
 module Build (I: Dune.SYM) = struct
   open I
@@ -22,7 +22,7 @@ module Build (I: Dune.SYM) = struct
         (run [&quot;du-generate-viewslib0-ml.exe&quot;; &quot;-o&quot;; &quot;%{target}&quot;; &quot;%{deps}&quot;])));        
     (*
         Being part of a DSL gives us whatever power the interpreter &quot;I&quot; lets us have.
-        The dkml-dune-dsl.show interpreter &quot;I&quot; supports Mustache template expressions
+        The dkml-dune-dsl-show interpreter &quot;I&quot; supports Mustache template expressions
         like {{name}}, and can read from a parameters file.
     *)
     (library
@@ -34,7 +34,7 @@ module Build (I: Dune.SYM) = struct
         (pps ppx_deriving.ord)))
   ]
 end
-</code></p><p>The full set of expressions is available in <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html"><code>DkmlDuneDsl.Dune.SYM</code></a>. The <code>res</code> result variable you write must be a list of type <code>[`Stanza] repr</code>.</p><h3 id="step-five---glue"><a href="#step-five---glue" class="anchor"></a>Step Five - Glue</h3><p>Write some small Dune glue in your &quot;dune&quot; file to execute your Dune configuration file with an interpreter. The only standard interpreter is the <b>dkml-dune-dsl.show</b> interpreter. The following snippet goes into the normal &quot;dune&quot; file, _not_ the DSL:</p><pre>(rule
+</code></p><p>The full set of expressions is available in <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html"><code>DkmlDuneDsl.Dune.SYM</code></a>. The <code>res</code> result variable you write must be a list of type <code>[`Stanza] repr</code>.</p><h3 id="step-five---glue"><a href="#step-five---glue" class="anchor"></a>Step Five - Glue</h3><p>Write some small Dune glue in your &quot;dune&quot; file to execute your Dune configuration file with an interpreter. The only standard interpreter is the <b>dkml-dune-dsl-show</b> interpreter. The following snippet goes into the normal &quot;dune&quot; file, _not_ the DSL:</p><pre>(rule
   (target dune_inc.ml)
   (action
     (with-stdout-to %{target}
@@ -43,7 +43,7 @@ end
 (executable
  (name dune_inc)
  (modules dune_inc my_dune)
- (libraries dkml-dune-dsl.show))
+ (libraries dkml-dune-dsl-show))
 
 (rule
   (target dune.inc)
@@ -64,4 +64,4 @@ utop # DkmlDuneDsl.spec_version;;
 
 utop # DkmlDuneDsl.spec_modules;;
 - : (string * string) list =
-[(&quot;Build&quot;, &quot;Dune&quot;); (&quot;Project&quot;, &quot;DuneProject&quot;); (&quot;Workspace&quot;, &quot;DuneWorkspace&quot;)]</pre><ul><li>As of the writing of this documentation, the number <code>1</code> is the only supported <code>spec_version</code></li><li>The <code>spec_modules</code> are the <code>(fst,snd)</code> pairs that fill the placeholders in the module expression <code>&quot;module ?fst? : (I: ?snd?.SYM)&quot;</code></li></ul><h2 id="low-priority-tasks"><a href="#low-priority-tasks" class="anchor"></a>Low Priority Tasks</h2><ul><li>Technically the dkml-dune-dsl.show interpreter should be a composite of two interpreters. The first would just apply the Mustache template to all the strings of the DSL expression. The second would print out the DSL expression as s-exps. The first could be re-used and composed by other interpreters. Even with a split no user code needs to change; just name the first and second interpreters as &quot;.template&quot; and &quot;.sexp&quot;, and the composite &quot;.show&quot;. So this can wait until someone writes their own interpreter. The tagless final primer has notes on how to do compositions of interpreters.</li></ul></div></body></html>
+[(&quot;Build&quot;, &quot;Dune&quot;); (&quot;Project&quot;, &quot;DuneProject&quot;); (&quot;Workspace&quot;, &quot;DuneWorkspace&quot;)]</pre><ul><li>As of the writing of this documentation, the number <code>1</code> is the only supported <code>spec_version</code></li><li>The <code>spec_modules</code> are the <code>(fst,snd)</code> pairs that fill the placeholders in the module expression <code>&quot;module ?fst? : (I: ?snd?.SYM)&quot;</code></li></ul><h2 id="low-priority-tasks"><a href="#low-priority-tasks" class="anchor"></a>Low Priority Tasks</h2><ul><li>Technically the dkml-dune-dsl-show interpreter should be a composite of two interpreters. The first would just apply the Mustache template to all the strings of the DSL expression. The second would print out the DSL expression as s-exps. The first could be re-used and composed by other interpreters. Even with a split no user code needs to change; just name the first and second interpreters as &quot;.template&quot; and &quot;.sexp&quot;, and the composite &quot;.show&quot;. So this can wait until someone writes their own interpreter. The tagless final primer has notes on how to do compositions of interpreters.</li></ul></div></body></html>
