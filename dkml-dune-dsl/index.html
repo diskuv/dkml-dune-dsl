@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (dkml-dune-dsl.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.1.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – dkml-dune-dsl</nav><header class="odoc-preamble"><h1 id="dune-dsl"><a href="#dune-dsl" class="anchor"></a>Dune DSL</h1></header><nav class="odoc-toc"><ul><li><a href="#status">Status</a></li><li><a href="#usage">Usage</a><ul><li><a href="#step-one---install">Step One - Install</a></li><li><a href="#step-two---dune-project">Step Two - dune-project</a></li><li><a href="#step-three---parameters">Step Three - Parameters</a></li><li><a href="#step-four---writing">Step Four - Writing</a></li><li><a href="#step-five---glue">Step Five - Glue</a></li><li><a href="#finished!">Finished!</a></li></ul></li><li><a href="#tagless-final-configuration">Tagless Final Configuration</a></li></ul></nav><div class="odoc-content"><h2 id="status"><a href="#status" class="anchor"></a>Status</h2><p>This is an early release. The author jonahbeckford@ put in enough Dune syntax for what he needed; if you want more, this project accepts PRs!</p><h2 id="usage"><a href="#usage" class="anchor"></a>Usage</h2><h3 id="step-one---install"><a href="#step-one---install" class="anchor"></a>Step One - Install</h3><p>Install the DSL and a DSL interpreter with Opam using:</p><pre>opam install dkml-dune-dsl dkml-dune-dsl-show</pre><h3 id="step-two---dune-project"><a href="#step-two---dune-project" class="anchor"></a>Step Two - dune-project</h3><p>If you use <a href="https://dune.readthedocs.io/en/stable/dune-files.html#dune-project-1">dune-project</a> files to manage your project, add the DSL to it with the <code>build</code> flag:</p><pre>(package
+ ...
+ (depends
+  ...
+  (dkml-dune-dsl (and (&gt;= 0.1.0) :build))
+ )
+)</pre><h3 id="step-three---parameters"><a href="#step-three---parameters" class="anchor"></a>Step Three - Parameters</h3><p><i>optionally</i> write a JSON parameters file. You will need this if you want to parameterize your Dune file (to create multiple but similar executables, for example). You can write the JSON file manually. (If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and perhaps a <code>glob_files</code> expression). For what follows, we'll assume it is called <code>&quot;dune-parameters.json&quot;</code>:</p><pre>[
+  {&quot;name&quot;: &quot;batman&quot;, &quot;age&quot;: 39},
+  {&quot;name&quot;: &quot;robin&quot;, &quot;age&quot;: 24}
+]</pre><h3 id="step-four---writing"><a href="#step-four---writing" class="anchor"></a>Step Four - Writing</h3><p>Write your Dune configuration file in the OCaml DSL language. For what follows, we'll assume it is called <code>&quot;my_dune.ml&quot;</code>:</p><p><code>
+open DkmlDuneDsl
+module Build (I: Dune.SYM) = struct
+  open I
+  let res = [
+    (rule
+      (deps (glob_files &quot;*_view.ml&quot;))
+      (target &quot;viewslib0.ml&quot;)
+      (action
+        (run [&quot;du-generate-viewslib0-ml.exe&quot;; &quot;-o&quot;; &quot;%{target}&quot;; &quot;%{deps}&quot;])));        
+    (*
+        Being part of a DSL gives us whatever power the interpreter &quot;I&quot; lets us have.
+        The dkml-dune-dsl.show interpreter &quot;I&quot; supports Mustache template expressions
+        like {{name}}, and can read from a parameters file.
+    *)
+    (library
+      (name &quot;viewslib0&quot;)
+      (modules
+        &quot;viewslib0&quot;
+        &quot;{{name}}&quot;)
+      (preprocess
+        (pps ppx_deriving.ord)))
+  ]
+end
+</code></p><p>The full set of expressions is available in <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html"><code>DkmlDuneDsl.Dune.SYM</code></a>. The <code>res</code> result variable you write must be a list of type <code>[`Stanza] repr</code>.</p><h3 id="step-five---glue"><a href="#step-five---glue" class="anchor"></a>Step Five - Glue</h3><p>Write some small Dune glue in your &quot;dune&quot; file to execute your Dune configuration file with an interpreter. The only standard interpreter is the <b>dkml-dune-dsl.show</b> interpreter. The following snippet goes into the normal &quot;dune&quot; file, _not_ the DSL:</p><pre>(rule
+  (target dune_inc.ml)
+  (action
+    (with-stdout-to %{target}
+      (echo &quot;module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_endline @@ DkmlDuneDslShow.plain_hum M.res \n&quot;))))
+
+(executable
+ (name dune_inc)
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl.show))
+
+(rule
+  (target dune.inc)
+  (mode promote)
+  (action
+    (with-stdout-to %{target}
+      (run ./dune_inc.exe %{dep:dune-parameters.json}))))
+
+(include dune.inc)</pre><p>Then <b>write an empty <code>&quot;dune.inc&quot;</code> file</b> in the same directory as your <code>&quot;dune&quot;</code> file.</p><h3 id="finished!"><a href="#finished!" class="anchor"></a>Finished!</h3><p>Run <code>dune build</code>. Dune will create a <code>&quot;dune.inc&quot;</code> in your <code>&quot;_build/default&quot;</code> directory (not your source directory) containing the information from your DSL expression.</p><p>It will also tell you when your source directory is out of sync with your DSL expression. If you are comfortable with the changes it shows you, run <code>dune promote</code> and commit the changes to your source code repository.</p><p><b>You are done!</b></p><h2 id="tagless-final-configuration"><a href="#tagless-final-configuration" class="anchor"></a>Tagless Final Configuration</h2><p><i>If you are a user, you don't need to read this section. It is for those interested in creating their own configuration format using tagless final DSL languages.</i></p><p>The author jonahbeckford@ uses DSLs for configuration files because:</p><ol><li>as a creator of configuration file formats, I don't need to write a lexer or a parser. I instead re-use the OCaml language and just lean on OCaml's type-safety to create a rich DSL</li><li>as an author of configuration files, I get syntax checking, documentation and perhaps auto-completion with a modern editor _with some setup_</li><li>as a user of configuration files, I just need to compile it to see if the syntax is correct</li><li>at some point in the future, as a user of configuration files I can inspect the compiled bytecode to see if it is &quot;safe&quot; and avoids any system calls (all system calls, like printing to the standard output, should be done by the interpreter). For some configuration files calling out to the system is okay, but it is easy to conceive of a tool that validates safety for the majority of configuration files that don't need it.</li></ol><p>The sore spot today is the setup required to author a configuration file. You need:</p><ol><li>an Opam switch (or a configured findlib)</li><li>the DSL package installed (ex. dkml-dune-dsl)</li><li>the OCaml language server protocol and/or Merlin installed depending on your editor</li></ol><p>The setup should ideally be zero. It would be great that anybody could open up a DSL configuration file in their favorite editor and start configuring.</p><p>To support this, there is a convention I've been following:</p><p><code>
+open TheCamelCasedNamedOfTheDslOpamPackage
+module NamedFromTheDslSpec (I: NamedFromTheDslSpec.SYM) = struct
+  open I
+  let res = failwith &quot;TODO: Replace this with your DSL expression here&quot;
+end
+</code></p><p>There should be nothing else in a configuration file except OCaml odoc comments. Just the <code>open</code> statement at the top followed by a <code>module</code> definition!</p><p>For the Dune DSL:</p><ul><li>the <code>TheCamelCasedNamedOfTheDslOpamPackage</code> is <code>DkmlDuneDsl</code></li><li>the <code>NamedFromTheDslSpec</code> is the pair <code>(Build, Dune)</code> (more on this below)</li><li>the <code>AnyNameTheLanguageCreatorWants</code> is <code>Dune</code></li></ul><p>The convention for using <code>I</code> as the interpreter, using <code>SYM</code> as the module type, and using <code>res</code> as the interpreted result comes directly from <a href="https://okmij.org/ftp/tagless-final/course/optimizations.html#primer">Oleg Kiselyov's Tagless-final primer</a>. The tagless final primer is a good read if you want to implement your own DSL!</p><p>You can lightly parse a configuration and know that the Opam package for <code>DkmlDuneDsl</code> is <code>&quot;dkml-dune-dsl&quot;</code> with a library with the same <code>&quot;dkml-dune-dsl&quot;</code> name.</p><p>Introspecting that library with a OCaml toplevel REPL would show:</p><pre>utop # #require &quot;dkml-dune-dsl&quot;;;
+utop # DkmlDuneDsl.spec_version;;
+- : int = 1
+
+utop # DkmlDuneDsl.spec_modules;;
+- : (string * string) list =
+[(&quot;Build&quot;, &quot;Dune&quot;); (&quot;Project&quot;, &quot;DuneProject&quot;); (&quot;Workspace&quot;, &quot;DuneWorkspace&quot;)]</pre><ul><li>As of the writing of this documentation, the number <code>1</code> is the only supported <code>spec_version</code></li><li>The <code>spec_modules</code> are the <code>(fst,snd)</code> pairs that fill the placeholders in the module expression <code>&quot;module ?fst? : (I: ?snd?.SYM)&quot;</code></li></ul></div></body></html>
