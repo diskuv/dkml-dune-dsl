@@ -1,0 +1,34 @@
+(rule
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_endline @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+
+(executable
+ (name dune_inc)
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl.show))
+
+(rule
+ (target dune.inc)
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (setenv
+    OCAMLRUNPARAM
+    b
+    (run ./dune_inc.exe %{dep:dune-parameters.json})))))
+
+(include dune.inc)
+
+; ------ TESTS -----
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (run ../test-support/assert_file_contains.exe %{dep:batman.txt} 39)
+   (run ../test-support/assert_file_contains.exe %{dep:robin.txt} 24))))

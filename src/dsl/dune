@@ -1,0 +1,7 @@
+(library
+ (name DkmlDuneDsl)
+ (public_name dkml-dune-dsl)
+ (libraries))
+
+(documentation
+ (package dkml-dune-dsl))
