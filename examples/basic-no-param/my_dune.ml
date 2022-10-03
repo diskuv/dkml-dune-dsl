@@ -8,7 +8,8 @@ module Build (I : Dune.SYM) = struct
       rule
         [
           target "somefile.txt";
-          action (with_stdout_to "%{target}" (echo [ "hello" ]));
+          action
+            (with_stdout_to "%{target}" (echo [ "hello"; "to all the fish" ]));
         ];
     ]
 end

@@ -7,7 +7,14 @@ module I :
 
   (** {2 Utilities} *)
 
-  let _parameterize ~json s = Mustache.render (Mustache.of_string s) json
+  let _quote_if_needed s =
+    let s' = String.escaped s in
+    if String.equal s s' then s else "\"" ^ s' ^ ""
+
+  (** [_parameterize ~json s] renders any Mustache expressions in [s] using [json], and quotes
+      the result if necessary *)
+  let _parameterize ~json s =
+    _quote_if_needed @@ Mustache.render (Mustache.of_string s) json
 
   let _atom atom = Atom ({ row = 0; col = 0 }, atom, None)
   (* An [Atom] s-exp without comments or pos *)

@@ -26,4 +26,7 @@
 (rule
  (alias runtest)
  (action
-  (run ../test-support/assert_file_contains.exe %{dep:somefile.txt} hello)))
+  (run
+   ../test-support/assert_file_contains.exe
+   %{dep:somefile.txt}
+   "hello to all the fish")))
