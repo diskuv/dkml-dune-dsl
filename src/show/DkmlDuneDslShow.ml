@@ -210,7 +210,7 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
               |> List.map (fun s -> ";   " ^ s)
             in
             let ps_description_commented =
-              Printf.sprintf "; Parameter Set %d\n%s" (run_idx + 1)
+              Printf.sprintf "; Parameter Set =\n%s"
                 (String.concat "\n" ps_description_l)
             in
             let ps_comment =
