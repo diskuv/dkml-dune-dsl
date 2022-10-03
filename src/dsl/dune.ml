@@ -45,6 +45,9 @@ module type SYM = sig
   val target : string -> [ `RuleClause ] repr
 
   val deps : [ `Dep ] repr list -> [ `RuleClause ] repr
+  (** [deps [dep1; ...]] declares dependencies [[dep1; ...]] required by the rule.
+      
+      See {!section-Dependencies} for which dependencies are allowed. *)
 
   val action : [ `Action ] repr -> [ `RuleClause ] repr
   (** [action <action>] is what you run to produce the targets from the dependencies. *)
@@ -83,6 +86,39 @@ module type SYM = sig
 
   val ocamlopt_flags :
     [ `OCamlOptFlag ] repr list -> [ `CommonExecutableLibrary ] repr
+
+  val preprocess : [ `PreprocessSpec ] repr -> [ `CommonExecutableLibrary ] repr
+  (** [preprocess spec] specifies how to preprocess files when needed. The default
+      is {!no_preprocessing}.
+      
+      The full list of specifications is in {!section-Preprocessing}. *)
+
+  (** {4 Preprocessing} *)
+
+  val no_preprocessing : [ `PreprocessSpec ] repr
+  (** [no_preprocessing] tells Dune to give files as-is to the compiler *)
+
+  val pps : string list -> [ `PreprocessSpec ] repr
+  (** [pps [ppx1; ppx2; ...]] preprocesses files using the given list of PPX rewriters *)
+
+  val staged_pps : string list -> [ `PreprocessSpec ] repr
+  (** [staged_pps [ppx1; ppx2; ...]] preprocesses files using the given list of PPX rewriters
+      {b after} dependency analysis.
+      
+      It is slower than {!pps}, but you must use [staged_pps] instead of [pps] in order to force
+      Dune to use the following pipeline:
+      
+      + first stage of code generation
+      + dependency analysis
+      + second step of code generation in parallel with compilation      
+    *)
+
+  val future_syntax : [ `PreprocessSpec ] repr
+  (** [future_syntax] is equivalent to {!no_preprocessing} when using one of the most recent
+      versions of the compiler. When using an older one, it is a shim preprocessor that backports
+      some of the newer syntax elements. This allows you to use some of the new OCaml features
+      while keeping compatibility with older compilers.
+    *)
 
   (** {3 Install} *)
 

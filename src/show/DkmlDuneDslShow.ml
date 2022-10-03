@@ -96,7 +96,7 @@ module I :
         _atom (_parameterize ~json expected);
       ]
 
-  (** {3 Executables} *)
+  (** {3 Executables and Libraries} *)
 
   let public_name s json = _arg_of_string ~json "public_name" s
 
@@ -110,6 +110,18 @@ module I :
     _list [ _atom "modes"; _list [ _atom "byte"; _atom "exe" ] ]
 
   let ocamlopt_flags l json = _list ([ _atom "ocamlopt_flags" ] @ _spread json l)
+
+  let preprocess spec json = _list [ _atom "preprocess"; spec json ]
+
+  (** {4 Preprocessing} *)
+
+  let no_preprocessing _json = _atom "no_preprocessing"
+
+  let pps l json = _vararg_of_string ~json "pps" l
+
+  let staged_pps l json = _vararg_of_string ~json "staged_pps" l
+
+  let future_syntax _json = _atom "future_syntax"
 
   (** {3 Install} *)
 
