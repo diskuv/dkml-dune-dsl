@@ -128,20 +128,18 @@ let pretty = Sexp_pretty.Config.default
 
 type params_avail = No_parameters | Has_parameters
 
+(** Equivalent to a single-item array (1 item) of an empty object (no parameters) *)
+let minimal_params_file = "{ \"param-sets\": [ {} ] }"
+
 let json_from_argv () : params_avail * Mustache.Json.t =
   match Sys.argv with
   | [||] -> failwith "Sys.argv was empty!"
-  | [| _ |] ->
-      (* Equivalent to a single-item array (1 item) of an empty object (no parameters):
-         {v
-            [ {} ]
-         v} *)
-      (No_parameters, `A [ `O [] ])
+  | [| _ |] -> (No_parameters, Ezjsonm.from_string minimal_params_file)
   | [| _; filename |] ->
       let ic = open_in filename in
-      let x = Ezjsonm.from_channel ic in
+      let json = Ezjsonm.from_channel ic in
       close_in ic;
-      (Has_parameters, x)
+      (Has_parameters, json)
   | _ -> failwith "usage: show.exe [MUSTACHE_JSON_PARAMETERS]"
 
 (* CLI entry points *)
@@ -150,48 +148,73 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
   (* Get the JSON *)
   let params_avail, json = json_from_argv () in
   (* Parse JSON *)
-  let list_of_json_runs =
-    (* Validate it is an array (one for each parameterized run of the interpreter) *)
-    match json with
-    | `A runs -> runs
+  let param_sets =
+    (* Validate it is an object *)
+    (match json with
+    | `O _ -> ()
     | _ ->
         let msg =
           Printf.sprintf
-            "The JSON parameter file is not an array. The most basic JSON \
-             parameter file is: [ {} ]. Instead the parameter file was: %s"
-            (Ezjsonm.to_string json)
+            "The JSON parameter file is not a JSON object. A minimal JSON \
+             parameter file is: %s. Instead the parameter file was: %s"
+            minimal_params_file (Ezjsonm.to_string json)
         in
+        prerr_endline @@ "FATAL: " ^ msg;
+        failwith msg);
+    (* Validate it has a param-sets array, and return it *)
+    match Ezjsonm.find_opt (Ezjsonm.value json) [ "param-sets" ] with
+    | Some (`A param_sets) -> param_sets
+    | Some value ->
+        let msg =
+          Printf.sprintf
+            "The JSON parameter file's \"param-sets\" field is not an array. A \
+             minimal JSON parameter file is: %s. Instead the field was: %s"
+            minimal_params_file
+            (Ezjsonm.value_to_string value)
+        in
+        prerr_endline @@ "FATAL: " ^ msg;
+        failwith msg
+    | None ->
+        let msg =
+          Printf.sprintf
+            "The JSON parameter file's \"param-sets\" field was not present. A \
+             minimal JSON parameter file is: %s. Instead the parameter file \
+             was: %s"
+            minimal_params_file (Ezjsonm.to_string json)
+        in
+        prerr_endline @@ "FATAL: " ^ msg;
         failwith msg
   in
   let buf = Buffer.create 1024 in
   let fmt = Format.formatter_of_buffer buf in
-  let g_run run_idx json_run =
+  let g_param_set run_idx param_set =
     (* Validate the JSON run (which is passed directly to Mustache) is an object *)
-    match json_run with
-    | `O _ as validated_json_run ->
+    match param_set with
+    | `O _ as validated_param_set ->
         let open Sexplib.Sexp.With_layout in
         let pending_prints = Queue.create () in
         (* Print comment with the Mustache JSON parameters *)
         (match params_avail with
         | No_parameters -> ()
         | Has_parameters ->
-            let run_description = Ezjsonm.value_to_string json_run in
-            let run_description_l =
-              Astring.String.cuts ~sep:"\n" run_description
+            (* Describe the parameter set *)
+            let ps_description = Ezjsonm.value_to_string param_set in
+            let ps_description_l =
+              Astring.String.cuts ~sep:"\n" ps_description
               |> List.map (fun s -> ";   " ^ s)
             in
-            let run_description_commented =
-              Printf.sprintf "; Parameters %d\n%s" (run_idx + 1)
-                (String.concat "\n" run_description_l)
+            let ps_description_commented =
+              Printf.sprintf "; Parameter Set %d\n%s" (run_idx + 1)
+                (String.concat "\n" ps_description_l)
             in
-            let run_comment =
+            let ps_comment =
               Comment
-                (Plain_comment ({ row = 0; col = 0 }, run_description_commented))
+                (Plain_comment ({ row = 0; col = 0 }, ps_description_commented))
             in
-            Queue.add run_comment pending_prints);
+            Queue.add ps_comment pending_prints);
         (* Print Dune stanzas *)
         let f_stanza sexpf =
-          let sexp = Sexp (sexpf validated_json_run) in
+          let sexp = Sexp (sexpf validated_param_set) in
           Queue.add sexp pending_prints
         in
         List.iter f_stanza stanza_sexpf_lst;
@@ -205,11 +228,11 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
             "The JSON parameter file is not an array of objects. The most \
              basic JSON parameter file is: [ {} ]. Instead the parameter file \
              was: %s"
-            (Ezjsonm.value_to_string json_run)
+            (Ezjsonm.value_to_string param_set)
         in
         failwith msg
   in
-  List.iteri g_run list_of_json_runs;
+  List.iteri g_param_set param_sets;
   Format.pp_print_flush fmt ();
   Buffer.to_bytes buf |> Bytes.to_string
 

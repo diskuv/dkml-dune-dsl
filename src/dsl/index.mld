@@ -32,17 +32,36 @@ v}
 
 {2 Step Three - Parameters}
 
-{i optionally} write a JSON parameters file. You will need this if you want to parameterize your
-Dune file (to create multiple but similar executables, for example). You can write the JSON file manually.
-(If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and
-perhaps a [glob_files] expression). For what follows, we'll assume it is called ["dune-parameters.json"]:
+An interpreter takes your Dune DSL expression and any command line arguments you supply to it, and performs
+some activity on it. In particular:
+- the {b dkml-dune-dsl.show} interpreter takes your Dune DSL expression and prints your DSL
+  expression as a valid Dune file. The {b dkml-dune-dsl.show} interpreter takes an {i optional} parameters
+  file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example)
+
+In what follows we will use the {b dkml-dune-dsl.show} interpreter and give it a parameters file
+called ["dune-parameters.json"]:
 
 {v
-[
-  {"name": "batman", "age": 39},
-  {"name": "robin", "age": 24}
-]
+{
+  "param-sets": [
+    {"name": "batman", "age": 39},
+    {"name": "robin", "age": 24}
+  ]
+}
 v}
+
+(If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and
+perhaps a [glob_files] expression).
+
+The example above has two parameter sets, which the {b dkml-dune-dsl.show} interpreter will use
+to print your Dune DSL expression {b twice} into the same file:
++ The first print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["batman"] and
+  ["39"], respectively
++ The second print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["robin"] and
+  ["24"], respectively
+
+If you don't supply a parameters file to the {b dkml-dune-dsl.show} interpreter it will print your Dune DSL
+expression literally without any ["{{ ... }}"] replacements.
 
 {2 Step Four - Writing}
 

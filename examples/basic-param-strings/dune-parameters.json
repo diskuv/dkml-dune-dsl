@@ -1,4 +1,6 @@
-[
+{
+  "param-sets": [
     {"name": "batman", "age": 39},
     {"name": "robin", "age": 24}
-]
+  ]
+}
