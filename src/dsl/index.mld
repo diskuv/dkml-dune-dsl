@@ -34,11 +34,11 @@ v}
 
 An interpreter takes your Dune DSL expression and any command line arguments you supply to it, and performs
 some activity on it. In particular:
-- the {b dkml-dune-dsl.show} interpreter takes your Dune DSL expression and prints your DSL
-  expression as a valid Dune file. The {b dkml-dune-dsl.show} interpreter takes an {i optional} parameters
+- the {b dkml-dune-dsl-show} interpreter takes your Dune DSL expression and prints your DSL
+  expression as a valid Dune file. The {b dkml-dune-dsl-show} interpreter takes an {i optional} parameters
   file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example)
 
-In what follows we will use the {b dkml-dune-dsl.show} interpreter and give it a parameters file
+In what follows we will use the {b dkml-dune-dsl-show} interpreter and give it a parameters file
 called ["dune-parameters.json"]:
 
 {v
@@ -53,14 +53,14 @@ v}
 (If you have advanced experience with Dune you may want to generate the JSON file automatically with rules and
 perhaps a [glob_files] expression).
 
-The example above has two parameter sets, which the {b dkml-dune-dsl.show} interpreter will use
+The example above has two parameter sets, which the {b dkml-dune-dsl-show} interpreter will use
 to print your Dune DSL expression {b twice} into the same file:
 + The first print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["batman"] and
   ["39"], respectively
 + The second print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["robin"] and
   ["24"], respectively
 
-If you don't supply a parameters file to the {b dkml-dune-dsl.show} interpreter it will print your Dune DSL
+If you don't supply a parameters file to the {b dkml-dune-dsl-show} interpreter it will print your Dune DSL
 expression literally without any ["{{ ... }}"] replacements.
 
 {2 Step Four - Writing}
@@ -80,7 +80,7 @@ module Build (I: Dune.SYM) = struct
         (run ["du-generate-viewslib0-ml.exe"; "-o"; "%{target}"; "%{deps}"])));        
     (*
         Being part of a DSL gives us whatever power the interpreter "I" lets us have.
-        The dkml-dune-dsl.show interpreter "I" supports Mustache template expressions
+        The dkml-dune-dsl-show interpreter "I" supports Mustache template expressions
         like {{name}}, and can read from a parameters file.
     *)
     (library
@@ -100,7 +100,7 @@ you write must be a list of type [[`Stanza] repr].
 {2 Step Five - Glue}
 
 Write some small Dune glue in your "dune" file to execute your Dune configuration file
-with an interpreter. The only standard interpreter is the {b dkml-dune-dsl.show} interpreter.
+with an interpreter. The only standard interpreter is the {b dkml-dune-dsl-show} interpreter.
 The following snippet goes into the normal "dune" file, _not_ the DSL:
 
 {v
@@ -113,7 +113,7 @@ The following snippet goes into the normal "dune" file, _not_ the DSL:
 (executable
  (name dune_inc)
  (modules dune_inc my_dune)
- (libraries dkml-dune-dsl.show))
+ (libraries dkml-dune-dsl-show))
 
 (rule
   (target dune.inc)
@@ -205,7 +205,7 @@ v}
 
 {1 Low Priority Tasks}
 
-- Technically the dkml-dune-dsl.show interpreter should be a composite of two interpreters. The first
+- Technically the dkml-dune-dsl-show interpreter should be a composite of two interpreters. The first
   would just apply the Mustache template to all the strings of the DSL expression. The second would
   print out the DSL expression as s-exps. The first could be re-used and composed by other interpreters.
   Even with a split no user code needs to change; just name the first and second interpreters

@@ -9,7 +9,7 @@
 (executable
  (name dune_inc)
  (modules dune_inc my_dune)
- (libraries dkml-dune-dsl.show))
+ (libraries dkml-dune-dsl-show))
 
 (rule
  (target dune.inc)

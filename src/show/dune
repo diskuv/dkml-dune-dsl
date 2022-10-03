@@ -1,4 +1,4 @@
 (library
  (name DkmlDuneDslShow)
- (public_name dkml-dune-dsl.show)
+ (public_name dkml-dune-dsl-show)
  (libraries dkml-dune-dsl astring ezjsonm mustache sexp_pretty))
