@@ -7,5 +7,7 @@ let spec_version = 1
 
 let spec_modules =
   [
-    ("Build", "Dune"); ("Project", "DuneProject"); ("Workspace", "DuneWorkspace");
+    ("Build", "Dune");
+    (* Perhaps someday! ("Project", "DuneProject");  *)
+    (* Perhaps someday! ("Workspace", "DuneWorkspace"); *)
   ]
