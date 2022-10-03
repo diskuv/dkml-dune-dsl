@@ -96,6 +96,15 @@ module I :
         _atom (_parameterize ~json expected);
       ]
 
+  let setenv ~name ~value action json =
+    _list
+      [
+        _atom "setenv";
+        _atom (_parameterize ~json name);
+        _atom (_parameterize ~json value);
+        action json;
+      ]
+
   (** {3 Executables and Libraries} *)
 
   let public_name s json = _arg_of_string ~json "public_name" s

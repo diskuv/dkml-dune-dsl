@@ -61,16 +61,35 @@ module type SYM = sig
   (** {4 Actions} *)
 
   val echo : string list -> [ `Action ] repr
+  (* [echo [s1; s2; ...]] writes the strings [s1; s2; ...] to the standard output
+     separated by a space. *)
 
   val with_stdout_to : string -> [ `Action ] repr -> [ `Action ] repr
+  (** [with_stdout_to filename action] redirects the output of action [action]
+      to the file named [filename]. *)
 
   val progn : [ `Action ] repr list -> [ `Action ] repr
+  (** [progn [action1; action2; ...]] executes several actions [action1; ...] in sequence *)
 
   val run : string list -> [ `Action ] repr
+  (** [run [prog; arg1; arg2; ...]] runs the program [prog] and gives it arguments [arg1; arg2; ...]. *)
 
   val diff : actual:string -> expected:string -> [ `Action ] repr
+  (** [diff ~actual ~expected] is similar to [run ["diff"; "<actual>"; "<expected>"]] but is
+      better and allows promotion. See
+      {{:https://dune.readthedocs.io/en/stable/concepts.html#diffing-and-promotion}Diffing and promotion} for more details. *)
 
   val diff_q : actual:string -> expected:string -> [ `Action ] repr
+  (** [diff_q ~actual ~expected] is the ["diff?"] action in a "dune" file, and is similar to
+      [run ["diff"; "<actual>"; "<expected>"]] except that
+      ["<expected>"] should be produced by a part of the same action rather than be a dependency, is optional
+      and will be consumed by [diff_q]. See
+      {{:https://dune.readthedocs.io/en/stable/concepts.html#diffing-and-promotion}Diffing and promotion} for more details. *)
+
+  val setenv :
+    name:string -> value:string -> [ `Action ] repr -> [ `Action ] repr
+  (** [setenv ~name ~value action] sets the environment variable [name] to [value]
+      in the action [action] *)
 
   (** {3 Executables and Libraries} *)
 
