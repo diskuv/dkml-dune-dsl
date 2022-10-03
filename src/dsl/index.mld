@@ -89,7 +89,7 @@ The following snippet goes into the normal "dune" file, _not_ the DSL:
   (target dune_inc.ml)
   (action
     (with-stdout-to %{target}
-      (echo "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_endline @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+      (echo "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n"))))
 
 (executable
  (name dune_inc)

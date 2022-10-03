@@ -94,7 +94,7 @@ module type SYM = sig
 
       Represents:
 
-      {v}
+      {v
       (mylib.el as emacs/site-lisp/mylib.el)
       v}
 
