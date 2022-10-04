@@ -7,6 +7,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   type 'a repr = args -> out
 
+  type compilation_mode = Byte | Native | Best
+
+  type binary_kind = C | Exe | Object | Shared_object | Js | Plugin
+
   (** {2 Utilities} *)
 
   let _quote_if_needed s =
@@ -129,10 +133,39 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let libraries l args = _vararg_of_string ~args "libraries" l
 
-  let modules l args = _vararg_of_string ~args "modules" l
+  let show_compilation_mode = function
+    | Byte -> "byte"
+    | Native -> "native"
+    | Best -> "best"
 
-  let modes_byte_exe _json =
-    _list [ _atom "modes"; _list [ _atom "byte"; _atom "exe" ] ]
+  let show_binary_kind = function
+    | C -> "c"
+    | Exe -> "exe"
+    | Object -> "object"
+    | Shared_object -> "shared_object"
+    | Js -> "js"
+    | Plugin -> "plugin"
+
+  let _mode = function
+    | `C -> _atom "c"
+    | `Exe -> _atom "exe"
+    | `Object -> _atom "object"
+    | `Shared_object -> _atom "shared_object"
+    | `Byte -> _atom "byte"
+    | `Native -> _atom "native"
+    | `Js -> _atom "js"
+    | `Plugin -> _atom "plugin"
+    | `Byte_complete -> _atom "byte_complete"
+    | `Mode (compilation_mode, binary_kind) ->
+        _list
+          [
+            _atom (show_compilation_mode compilation_mode);
+            _atom (show_binary_kind binary_kind);
+          ]
+
+  let modes l _args = _list ([ _atom "modes" ] @ List.map _mode l)
+
+  let modules l args = _vararg_of_string ~args "modules" l
 
   let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
 
@@ -140,13 +173,13 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   (** {4 Preprocessing} *)
 
-  let no_preprocessing _json = _atom "no_preprocessing"
+  let no_preprocessing _args = _atom "no_preprocessing"
 
   let pps l args = _vararg_of_string ~args "pps" l
 
   let staged_pps l args = _vararg_of_string ~args "staged_pps" l
 
-  let future_syntax _json = _atom "future_syntax"
+  let future_syntax _args = _atom "future_syntax"
 
   (** {3 Install} *)
 

@@ -116,7 +116,73 @@ module type SYM = sig
 
   val modules : string list -> [ `CommonExecutableLibrary ] repr
 
-  val modes_byte_exe : [ `CommonExecutableLibrary ] repr
+  type compilation_mode =
+    | Byte
+    | Native
+    | Best
+        (** [compilation_mode] must be byte, native, or best, where best is native with a fallback to bytecode when
+      native compilation isn’t available. *)
+
+  type binary_kind =
+    | C
+    | Exe
+    | Object
+    | Shared_object
+    | Js
+    | Plugin
+        (** [binary_kind] is one of:
+
+      - [C] for producing OCaml bytecode embedded in a C file
+      - [Exe] for normal executables
+      - [Object] for producing static object files that can be manually linked into C applications
+      - [Shared_object] for producing object files that can be dynamically loaded into an application.
+        This mode can be used to write a plugin in OCaml for a non-OCaml application.
+      - [Js] for producing JavaScript from bytecode executables, see explicit_js_mode.
+      - [Plugin] for producing a plugin (.cmxs if native or .cma if bytecode). *)
+
+  val modes :
+    [< `C
+    | `Exe
+    | `Object
+    | `Shared_object
+    | `Byte
+    | `Native
+    | `Js
+    | `Plugin
+    | `Byte_complete
+    | `Mode of compilation_mode * binary_kind ]
+    list ->
+    [ `CommonExecutableLibrary ] repr
+  (** The [modes] field allows selecting which linking modes will be used to link executables. Each mode is a
+      pair (<compilation-mode> <binary-kind>), where <compilation-mode> describes whether the bytecode or
+      native code backend of the OCaml compiler should be used and <binary-kind> describes what kind of file
+      should be produced.
+
+      Refer to {!compilation_mode} and {!binary_kind} for precise semantics.
+
+      For instance the following executables stanza will produce bytecode executables and native shared objects:
+
+      {v
+      (executable
+        (name "a")
+        (modes [`Mode (Byte, Exe); `Mode (Native; Shared_object)]))
+      v}
+
+      Additionally, you can use the following shorthands:
+
+      - `C for (byte c)
+      - `Exe for (best exe)
+      - `Object for (best object)
+      - `Shared_object for (best shared_object)
+      - `Byte for (byte exe)
+      - `Native for (native exe)
+      - `Js for (byte js)
+      - `Plugin for (best plugin)
+
+      Lastly, use the special mode [`Byte_complete] for building a bytecode executable as a native
+      self-contained executable, i.e., an executable that doesn’t require the ocamlrun program to
+      run and doesn’t require the C stubs to be installed as shared object files.
+  *)
 
   val ocamlopt_flags :
     [ `OCamlOptFlag ] repr list -> [ `CommonExecutableLibrary ] repr
