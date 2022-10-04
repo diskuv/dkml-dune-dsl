@@ -25,6 +25,8 @@ There is at least one sharp edge:
 
 {1 Usage}
 
+{i If you already know how to use Dune DSL, you can skip to the API documentation at {!DkmlDuneDsl.Dune.SYM}.}
+
 {2 Step One - Install}
 
 Install the DSL and a DSL interpreter with Opam using:
@@ -87,16 +89,25 @@ v}
 
 The example above has two parameter sets, which the {b dkml-dune-dsl-show} interpreter will use
 to print your Dune DSL expression {b twice} into the same file:
-+ The first print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["batman"] and
++ The first print will replace all ["{{{ name }}}"] and ["{{{ age }}}"] strings with ["batman"] and
   ["39"], respectively
-+ The second print will replace all ["{{ name }}"] and ["{{ age }}"] strings with ["robin"] and
++ The second print will replace all ["{{{ name }}}"] and ["{{{ age }}}"] strings with ["robin"] and
   ["24"], respectively
 
-If you don't supply a parameters file to the {b dkml-dune-dsl-show} interpreter it will print your Dune DSL
-expression literally {b once} without any ["{{ ... }}"] replacements.
-
-If you have advanced experience with Dune you may want to generate the parameters file automatically with rules and
-perhaps a [glob_files] expression.
+Let's complete the parameter set story:
++ All of those ["{{ ... }}"] expressions are known as {{:http://mustache.github.io/mustache.5.html}Mustache expressions}.
+  Mustache is great at operating on JSON documents, which is exactly what the parameters file is.
+  Most but not all of the Mustache expression language can be used; see
+  {{:https://github.com/rgrinberg/ocaml-mustache#readme}OCaml Mustache} for the exact specification.
++ Our examples use three braces ["{{{ ... }}}"] rather than two braces ["{{ ... }}"] because the
+  three braces is not HTML escaped.  
++ Any ["{{{ xyz }}}"] parameter where [xyz] is not in your parameter set will be replaced with
+  an empty string.
++ If you don't supply a parameters file to the {b dkml-dune-dsl-show} interpreter it will print your
+  Dune DSL expression once
++ Rather than use a single parameter set to print (ex. [{"name": "batman", "age": 39}]), you can use
+  the entire parameters file if you use the [pragma once] mode. We'll describe that pragma in the next
+  section, but for now remember you can use [pragma once] and 
 
 {2 Step Four - Writing}
 

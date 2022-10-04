@@ -1,4 +1,8 @@
-type args = { params : Mustache.Json.t; params_idx : int }
+type args = {
+  params : Mustache.Json.t;
+  params_idx : int;
+  entire_params_file : Mustache.Json.t;
+}
 
 type out = Sexplib.Sexp.With_layout.t option
 
@@ -73,8 +77,9 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     match (statement, args.params_idx) with
     | "once", 0 ->
         (* never do parameter replacement under "once"; that would make once dependent
-           on the order of the parameter set, which is too dangerous for a regular user *)
-        stanza { args with params = `O [] }
+           on the order of the parameter set, which is too dangerous for a regular user.
+           instead we give the very useful entire parameters file *)
+        stanza { args with params = args.entire_params_file }
     | "once", _idx ->
         (* exclude the stanza if we are repeating more than once *)
         None
@@ -297,23 +302,26 @@ let json_from_argv () : params_avail * Mustache.Json.t =
 
 let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
   (* Get the JSON *)
-  let params_avail, json = json_from_argv () in
+  let params_avail, entire_params_file = json_from_argv () in
   (* Parse JSON *)
   let param_sets =
     (* Validate it is an object *)
-    (match json with
+    (match entire_params_file with
     | `O _ -> ()
     | _ ->
         let msg =
           Printf.sprintf
             "The JSON parameter file is not a JSON object. A minimal JSON \
              parameter file is: %s. Instead the parameter file was: %s"
-            minimal_params_file (Ezjsonm.to_string json)
+            minimal_params_file
+            (Ezjsonm.to_string entire_params_file)
         in
         prerr_endline @@ "FATAL: " ^ msg;
         failwith msg);
     (* Validate it has a param-sets array, and return it *)
-    match Ezjsonm.find_opt (Ezjsonm.value json) [ "param-sets" ] with
+    match
+      Ezjsonm.find_opt (Ezjsonm.value entire_params_file) [ "param-sets" ]
+    with
     | Some (`A param_sets) -> param_sets
     | Some value ->
         let msg =
@@ -331,7 +339,8 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
             "The JSON parameter file's \"param-sets\" field was not present. A \
              minimal JSON parameter file is: %s. Instead the parameter file \
              was: %s"
-            minimal_params_file (Ezjsonm.to_string json)
+            minimal_params_file
+            (Ezjsonm.to_string entire_params_file)
         in
         prerr_endline @@ "FATAL: " ^ msg;
         failwith msg
@@ -365,7 +374,10 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
             Queue.add ps_comment pending_prints);
         (* Print Dune stanzas *)
         let f_stanza sexpf =
-          match sexpf { params = validated_param_set; params_idx } with
+          match
+            sexpf
+              { entire_params_file; params = validated_param_set; params_idx }
+          with
           | None -> ()
           | Some sexp -> Queue.add (Sexp sexp) pending_prints
         in

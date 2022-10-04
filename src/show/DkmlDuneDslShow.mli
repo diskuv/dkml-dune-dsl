@@ -2,6 +2,7 @@ type args = {
   params : Mustache.Json.t;
   params_idx : int;
       (** Zero-based index of [params] in the user-supplied parameter set *)
+  entire_params_file : Mustache.Json.t;
 }
 
 type out = Sexplib.Sexp.With_layout.t option

@@ -7,8 +7,8 @@ module Build (I : Dune.SYM) = struct
     [
       rule
         [
-          target "{{ name }}.txt";
-          action (with_stdout_to "%{target}" (echo [ "{{ age }}" ]));
+          target "{{{ name }}}.txt";
+          action (with_stdout_to "%{target}" (echo [ "{{{ age }}}" ]));
         ];
     ]
 end

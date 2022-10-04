@@ -260,7 +260,7 @@ module type SYM = sig
 
       - [set_of ["a"; "b"; "c"]] are the set of arguments ["a"], ["b"] and ["c"]
       - [split "a b c"] are the set of arguments ["a"], ["b"] and ["c"]
-      - [split "{{ #param-sets }} {{ module }} {{ /param-sets }}"] are the set of arguments after calculating the Mustache expression.
+      - [split "{{#param-sets}} {{{ module }}} {{/param-sets}}"] are the set of arguments after calculating the Mustache expression.
         The ["param-sets"] field of your parameter file will be available if you use the [pragma "once" ...]; see {!pragma}. With
         the example Mustache expression, Mustache will collect all of the [module] fields of your parameter file into a single string,
         and then [split] will split those modules by atoms.
