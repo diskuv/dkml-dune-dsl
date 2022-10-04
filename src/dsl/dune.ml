@@ -36,6 +36,21 @@ module type SYM = sig
 
   val install : [ `Install ] repr list -> [ `Stanza ] repr
 
+  val pragma : string -> [ `Stanza ] repr -> [ `Stanza ] repr
+  (** [pragma instruction stanza] gives an [instruction] to the interpreter that modifies the
+      behavior of a Dune [stanza].
+      
+      The standard pragmas are:
+
+      + ["once"] - Use this for the {b dkml-dune-dsl-show} interpreter, and any other
+        compliant interpreter, to indicate that the [stanza] should be included at most once.
+        Often you will have common build rules that should not be include multiple times
+        simply because you have multiple parameter sets.
+        
+        For the {b dkml-dune-dsl-show} interpreter, a tell-tale sign that you should
+        use ["once"] is when your rules do not have any parameters ["{{ }}"] in them.
+      *)
+
   (** {3 Rules} *)
 
   val alias : string -> [ `RuleClause ] repr

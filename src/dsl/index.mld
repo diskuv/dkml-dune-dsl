@@ -108,29 +108,68 @@ open DkmlDuneDsl
 module Build (I: Dune.SYM) = struct
   open I
   let res = [
-    (rule
-      (deps (glob_files "*_view.ml"))
-      (target "viewslib0.ml")
-      (action
-        (run ["du-generate-viewslib0-ml.exe"; "-o"; "%{target}"; "%{deps}"])));        
+    (pragma "once"
+      (rule [
+        (deps [glob_files "*_data.ml"]);
+        (target "common.ml");
+        (action
+          (run ["something.exe"; "-o"; "%{target}"; "%{deps}"]))]));
+    (pragma "once"
+      (library [
+        (name "common");
+        (modules [ "common" ]);
+      ]));
     (*
         Being part of a DSL gives us whatever power the interpreter "I" lets us have.
         The dkml-dune-dsl-show interpreter "I" supports Mustache template expressions
-        like {{name}}, and can read from a parameters file.
+        like {{name}} that are consumed from a parameters file.
+
+        We didn't want to repeat the previous stanzas multiple times, so we wrapped
+        them in a (pragma "once" ...).
     *)
-    (library
-      (name "viewslib0")
-      (modules
-        "viewslib0"
-        "{{name}}")
+    (library [
+      (name "{{name}}");
+      (modules [ "{{name}}" ]);
+      (libraries ["common"]);
       (preprocess
-        (pps ppx_deriving.ord)))
+        (pps ["ppx_deriving.ord"]))])
   ]
 end
 ]
 
+Let's peek ahead for a second. Once we complete all the steps, the Dune DSL tooling should
+give us a valid Dune include file that looks roughly like:
+
+{v
+    (rule [
+      (deps [glob_files "*_asset.png"]);
+      (target "common.ml");
+      (action
+        (run ["something.exe"; "--output"; "%{target}"; "%{deps}"]))]);
+    (library [
+      (name "common");
+      (modules [ "common" ]);
+    ]);
+
+    (library [
+      (name "batman");
+      (modules [ "batman" ]);
+      (libraries ["common"]);
+      (preprocess
+        (pps ["ppx_deriving.ord"]))])
+    (library [
+      (name "robin");
+      (modules [ "robin" ]);
+      (libraries ["common"]);
+      (preprocess
+        (pps ["ppx_deriving.ord"]))])
+v}
+
 The full set of expressions is available in {!DkmlDuneDsl.Dune.SYM}. The [res] result variable
 you write must be a list of type [[`Stanza] repr].
+
+{i If you have any stanza that does not use a parameter ["{{ ... }}"] you should wrap it in
+a {!DkmlDuneDsl.Dune.SYM.pragma}. }
 
 {2 Step Five - Glue}
 

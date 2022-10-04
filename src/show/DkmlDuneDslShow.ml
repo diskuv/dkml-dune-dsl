@@ -1,9 +1,11 @@
-module I :
-  DkmlDuneDsl.Dune.SYM
-    with type 'a repr = Mustache.Json.t -> Sexplib.Sexp.With_layout.t = struct
+type args = { params : Mustache.Json.t; params_idx : int }
+
+type out = Sexplib.Sexp.With_layout.t option
+
+module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   open Sexplib.Sexp.With_layout
 
-  type 'a repr = Mustache.Json.t -> Sexplib.Sexp.With_layout.t
+  type 'a repr = args -> out
 
   (** {2 Utilities} *)
 
@@ -11,139 +13,153 @@ module I :
     let s' = String.escaped s in
     if String.equal s s' then s else "\"" ^ s' ^ ""
 
-  (** [_parameterize ~json s] renders any Mustache expressions in [s] using [json], and quotes
+  (** [_parameterize ~args s] renders any Mustache expressions in [s] using [json], and quotes
       the result if necessary *)
-  let _parameterize ~json s =
-    _quote_if_needed @@ Mustache.render (Mustache.of_string s) json
+  let _parameterize ~args s =
+    _quote_if_needed @@ Mustache.render (Mustache.of_string s) args.params
 
-  let _atom atom = Atom ({ row = 0; col = 0 }, atom, None)
+  let _atom atom = Some (Atom ({ row = 0; col = 0 }, atom, None))
   (* An [Atom] s-exp without comments or pos *)
 
   let _list l =
-    List
-      ( { row = 0; col = 0 },
-        List.map (fun sexp -> Sexp sexp) l,
-        { row = 0; col = 0 } )
+    Some
+      (List
+         ( { row = 0; col = 0 },
+           List.filter_map
+             (function None -> None | Some sexp -> Some (Sexp sexp))
+             l,
+           { row = 0; col = 0 } ))
   (* A [List] s-exp without comments or pos inside the list items *)
 
-  let _vararg_of_string ~json token sl =
+  let _vararg_of_string ~args token sl =
     _list
       ([ _atom token ]
-      @ Stdlib.List.map (fun s -> _atom (_parameterize ~json s)) sl)
+      @ Stdlib.List.map (fun s -> _atom (_parameterize ~args s)) sl)
 
-  let _arg_of_string ~json token s =
-    _list [ _atom token; _atom (_parameterize ~json s) ]
+  let _arg_of_string ~args token s =
+    _list [ _atom token; _atom (_parameterize ~args s) ]
 
-  let _spread json = List.map (fun child -> child json)
+  let _spread args = List.map (fun child -> child args)
 
   (** {2 Stanzas} *)
 
-  let rule l json = _list ([ _atom "rule" ] @ _spread json l)
+  let rule l args = _list ([ _atom "rule" ] @ _spread args l)
 
-  let executable l json = _list ([ _atom "executable" ] @ _spread json l)
+  let executable l args = _list ([ _atom "executable" ] @ _spread args l)
 
-  let library l json = _list ([ _atom "library" ] @ _spread json l)
+  let library l args = _list ([ _atom "library" ] @ _spread args l)
 
-  let install l json = _list ([ _atom "install" ] @ _spread json l)
+  let install l args = _list ([ _atom "install" ] @ _spread args l)
+
+  let pragma statement stanza args =
+    match (statement, args.params_idx) with
+    | "once", 0 ->
+        (* never do parameter replacement under "once"; that would make once dependent
+           on the order of the parameter set, which is too dangerous for a regular user *)
+        stanza { args with params = `O [] }
+    | "once", _idx ->
+        (* exclude the stanza if we are repeating more than once *)
+        None
+    | _ -> stanza args
 
   (** {3 Rules} *)
 
-  let alias s json = _arg_of_string ~json "alias" s
+  let alias s args = _arg_of_string ~args "alias" s
 
-  let targets l json = _vararg_of_string ~json "targets" l
+  let targets l args = _vararg_of_string ~args "targets" l
 
-  let target s json = _arg_of_string ~json "target" s
+  let target s args = _arg_of_string ~args "target" s
 
-  let deps l json = _list ([ _atom "deps" ] @ _spread json l)
+  let deps l args = _list ([ _atom "deps" ] @ _spread args l)
 
-  let action a json = _list [ _atom "action"; a json ]
+  let action a args = _list [ _atom "action"; a args ]
 
   (** {4 Dependencies} *)
 
-  let glob_files globstring json = _arg_of_string ~json "glob_files" globstring
+  let glob_files globstring args = _arg_of_string ~args "glob_files" globstring
 
-  let named_dep ~name dep json =
+  let named_dep ~name dep args =
     _list
       [
-        _atom (":" ^ _parameterize ~json name); _atom (_parameterize ~json dep);
+        _atom (":" ^ _parameterize ~args name); _atom (_parameterize ~args dep);
       ]
 
   (** {4 Actions} *)
 
-  let echo msglst json = _vararg_of_string ~json "echo" msglst
+  let echo msglst args = _vararg_of_string ~args "echo" msglst
 
-  let with_stdout_to file action json =
+  let with_stdout_to file action args =
     _list
-      [ _atom "with-stdout-to"; _atom (_parameterize ~json file); action json ]
+      [ _atom "with-stdout-to"; _atom (_parameterize ~args file); action args ]
 
-  let progn l json = _list ([ _atom "progn" ] @ _spread json l)
+  let progn l args = _list ([ _atom "progn" ] @ _spread args l)
 
-  let run l json = _vararg_of_string ~json "run" l
+  let run l args = _vararg_of_string ~args "run" l
 
-  let diff ~actual ~expected json =
+  let diff ~actual ~expected args =
     _list
       [
         _atom "diff";
-        _atom (_parameterize ~json actual);
-        _atom (_parameterize ~json expected);
+        _atom (_parameterize ~args actual);
+        _atom (_parameterize ~args expected);
       ]
 
-  let diff_q ~actual ~expected json =
+  let diff_q ~actual ~expected args =
     _list
       [
         _atom "diff?";
-        _atom (_parameterize ~json actual);
-        _atom (_parameterize ~json expected);
+        _atom (_parameterize ~args actual);
+        _atom (_parameterize ~args expected);
       ]
 
-  let setenv ~name ~value action json =
+  let setenv ~name ~value action args =
     _list
       [
         _atom "setenv";
-        _atom (_parameterize ~json name);
-        _atom (_parameterize ~json value);
-        action json;
+        _atom (_parameterize ~args name);
+        _atom (_parameterize ~args value);
+        action args;
       ]
 
   (** {3 Executables and Libraries} *)
 
-  let public_name s json = _arg_of_string ~json "public_name" s
+  let public_name s args = _arg_of_string ~args "public_name" s
 
-  let name s json = _arg_of_string ~json "name" s
+  let name s args = _arg_of_string ~args "name" s
 
-  let libraries l json = _vararg_of_string ~json "libraries" l
+  let libraries l args = _vararg_of_string ~args "libraries" l
 
-  let modules l json = _vararg_of_string ~json "modules" l
+  let modules l args = _vararg_of_string ~args "modules" l
 
   let modes_byte_exe _json =
     _list [ _atom "modes"; _list [ _atom "byte"; _atom "exe" ] ]
 
-  let ocamlopt_flags l json = _list ([ _atom "ocamlopt_flags" ] @ _spread json l)
+  let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
 
-  let preprocess spec json = _list [ _atom "preprocess"; spec json ]
+  let preprocess spec args = _list [ _atom "preprocess"; spec args ]
 
   (** {4 Preprocessing} *)
 
   let no_preprocessing _json = _atom "no_preprocessing"
 
-  let pps l json = _vararg_of_string ~json "pps" l
+  let pps l args = _vararg_of_string ~args "pps" l
 
-  let staged_pps l json = _vararg_of_string ~json "staged_pps" l
+  let staged_pps l args = _vararg_of_string ~args "staged_pps" l
 
   let future_syntax _json = _atom "future_syntax"
 
   (** {3 Install} *)
 
-  let section s json = _arg_of_string ~json "section" s
+  let section s args = _arg_of_string ~args "section" s
 
-  let install_files l json = _list ([ _atom "files" ] @ _spread json l)
+  let install_files l args = _list ([ _atom "files" ] @ _spread args l)
 
-  let destination_file ~filename ~destination json =
+  let destination_file ~filename ~destination args =
     _list
       [
-        _atom (_parameterize ~json filename);
+        _atom (_parameterize ~args filename);
         _atom "as";
-        _atom (_parameterize ~json destination);
+        _atom (_parameterize ~args destination);
       ]
 end
 
@@ -173,7 +189,7 @@ let json_from_argv () : params_avail * Mustache.Json.t =
 
 (* CLI entry points *)
 
-let do_cli sexp_pretty_config stanza_sexpf_lst =
+let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
   (* Get the JSON *)
   let params_avail, json = json_from_argv () in
   (* Parse JSON *)
@@ -216,7 +232,7 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
   in
   let buf = Buffer.create 1024 in
   let fmt = Format.formatter_of_buffer buf in
-  let g_param_set run_idx param_set =
+  let g_param_set params_idx param_set =
     (* Validate the JSON run (which is passed directly to Mustache) is an object *)
     match param_set with
     | `O _ as validated_param_set ->
@@ -243,12 +259,13 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
             Queue.add ps_comment pending_prints);
         (* Print Dune stanzas *)
         let f_stanza sexpf =
-          let sexp = Sexp (sexpf validated_param_set) in
-          Queue.add sexp pending_prints
+          match sexpf { params = validated_param_set; params_idx } with
+          | None -> ()
+          | Some sexp -> Queue.add (Sexp sexp) pending_prints
         in
         List.iter f_stanza stanza_sexpf_lst;
         (* Dump everything to formatter *)
-        if run_idx > 0 then Format.pp_print_newline fmt ();
+        if params_idx > 0 then Format.pp_print_newline fmt ();
         let next () = Queue.take_opt pending_prints in
         Sexp_pretty.Sexp_with_layout.pp_formatter' ~next sexp_pretty_config fmt
     | _ ->
@@ -265,10 +282,8 @@ let do_cli sexp_pretty_config stanza_sexpf_lst =
   Format.pp_print_flush fmt ();
   Buffer.to_bytes buf |> Bytes.to_string
 
-let plain_hum
-    (stanza_sexpf_lst : (Mustache.Json.t -> Sexplib.Sexp.With_layout.t) list) =
+let plain_hum (stanza_sexpf_lst : (args -> out) list) =
   do_cli plain_hum_config stanza_sexpf_lst
 
-let pretty
-    (stanza_sexpf_lst : (Mustache.Json.t -> Sexplib.Sexp.With_layout.t) list) =
+let pretty (stanza_sexpf_lst : (args -> out) list) =
   do_cli pretty stanza_sexpf_lst
