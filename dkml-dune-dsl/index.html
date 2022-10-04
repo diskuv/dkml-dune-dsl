@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (dkml-dune-dsl.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.1.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – dkml-dune-dsl</nav><header class="odoc-preamble"><h1 id="dune-dsl"><a href="#dune-dsl" class="anchor"></a>Dune DSL</h1></header><nav class="odoc-toc"><ul><li><a href="#status">Status</a></li><li><a href="#usage">Usage</a><ul><li><a href="#step-one---install">Step One - Install</a></li><li><a href="#step-two---dune-project">Step Two - dune-project</a></li><li><a href="#step-three---parameters">Step Three - Parameters</a></li><li><a href="#step-four---writing">Step Four - Writing</a></li><li><a href="#step-five---glue">Step Five - Glue</a></li><li><a href="#finished!">Finished!</a></li></ul></li><li><a href="#tagless-final-configuration">Tagless Final Configuration</a></li><li><a href="#low-priority-tasks">Low Priority Tasks</a></li></ul></nav><div class="odoc-content"><h2 id="status"><a href="#status" class="anchor"></a>Status</h2><p>This is an early release. The author jonahbeckford@ put in enough Dune syntax for what he needed; if you want more, this project accepts PRs!</p><h2 id="usage"><a href="#usage" class="anchor"></a>Usage</h2><h3 id="step-one---install"><a href="#step-one---install" class="anchor"></a>Step One - Install</h3><p>Install the DSL and a DSL interpreter with Opam using:</p><pre>opam install dkml-dune-dsl dkml-dune-dsl-show</pre><h3 id="step-two---dune-project"><a href="#step-two---dune-project" class="anchor"></a>Step Two - dune-project</h3><p>If you use <a href="https://dune.readthedocs.io/en/stable/dune-files.html#dune-project-1">dune-project</a> files to manage your project, add the DSL to it with the <code>build</code> flag:</p><pre>(package
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (dkml-dune-dsl.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.1.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – dkml-dune-dsl</nav><header class="odoc-preamble"><h1 id="dune-dsl"><a href="#dune-dsl" class="anchor"></a>Dune DSL</h1><p>A mini-language (DSL) for Dune files embedded in OCaml that produces readable, valid Dune include files. The mini-language closely matches the structure of a regular Dune file, and because it is embedded in OCaml you get OCaml type-safety and the power of your favorite OCaml IDE as you write your Dune files.</p><p>The Dune DSL uses a tagless final design, so your Dune DSL can be interpreted in a variety of ways that are independent of Dune itself. The standard dkml-dune-dsl-show interpreter allows all of the Dune string values (executable names, rule targets, etc.) to be parameterized from external JSON files. That lets you produce many similar executables, libraries or assets using the same Dune logic without repeating yourself (<a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY</a>).</p></header><nav class="odoc-toc"><ul><li><a href="#status">Status</a></li><li><a href="#usage">Usage</a><ul><li><a href="#step-one---install">Step One - Install</a></li><li><a href="#step-two---dune-project">Step Two - dune-project</a></li><li><a href="#step-three---parameters">Step Three - Parameters</a></li><li><a href="#step-four---writing">Step Four - Writing</a></li><li><a href="#step-five---glue">Step Five - Glue</a></li><li><a href="#finished!">Finished!</a></li></ul></li><li><a href="#tagless-final-configuration">Tagless Final Configuration</a></li><li><a href="#low-priority-tasks">Low Priority Tasks</a></li></ul></nav><div class="odoc-content"><h2 id="status"><a href="#status" class="anchor"></a>Status</h2><p>This is an early release. The author jonahbeckford@ put in enough Dune syntax for what he needed; if you want more, this project accepts PRs!</p><p>There is at least one sharp edge:</p><ol><li>If the version of Dune DSL you are using has a bug where it generates a syntactically incorrect Dune file, Dune will stop the build (which is expected). However if you upgrade the Dune DSL which includes a bug fix, Dune still will not be able to generated a corrected Dune file. You will need to truncate the <code>&quot;dune.inc&quot;</code> file so that the file is completely empty; then Dune will be able to generate the correct <code>&quot;dune.inc&quot;</code>. The situation is a classic chicken-and-egg because we let Dune generate its own include files.</li></ol><h2 id="usage"><a href="#usage" class="anchor"></a>Usage</h2><h3 id="step-one---install"><a href="#step-one---install" class="anchor"></a>Step One - Install</h3><p>Install the DSL and a DSL interpreter with Opam using:</p><pre>opam install dkml-dune-dsl dkml-dune-dsl-show</pre><h3 id="step-two---dune-project"><a href="#step-two---dune-project" class="anchor"></a>Step Two - dune-project</h3><p>If you use <a href="https://dune.readthedocs.io/en/stable/dune-files.html#dune-project-1">dune-project</a> files to manage your project, add the DSL to it with the <code>build</code> flag:</p><pre>(package
  ...
  (depends
   ...
@@ -20,26 +20,54 @@ open DkmlDuneDsl
 module Build (I: Dune.SYM) = struct
   open I
   let res = [
-    (rule
-      (deps (glob_files &quot;*_view.ml&quot;))
-      (target &quot;viewslib0.ml&quot;)
-      (action
-        (run [&quot;du-generate-viewslib0-ml.exe&quot;; &quot;-o&quot;; &quot;%{target}&quot;; &quot;%{deps}&quot;])));        
+    (pragma &quot;once&quot;
+      (rule [
+        (deps [glob_files &quot;*_data.ml&quot;]);
+        (target &quot;common.ml&quot;);
+        (action
+          (run [&quot;something.exe&quot;; &quot;-o&quot;; &quot;%{target}&quot;; &quot;%{deps}&quot;]))]));
+    (pragma &quot;once&quot;
+      (library [
+        (name &quot;common&quot;);
+        (modules [ &quot;common&quot; ]);
+      ]));
     (*
         Being part of a DSL gives us whatever power the interpreter &quot;I&quot; lets us have.
         The dkml-dune-dsl-show interpreter &quot;I&quot; supports Mustache template expressions
-        like {{name}}, and can read from a parameters file.
+        like {{name}} that are consumed from a parameters file.
+        We didn't want to repeat the previous stanzas multiple times, so we wrapped
+        them in a (pragma &quot;once&quot; ...).
     *)
-    (library
-      (name &quot;viewslib0&quot;)
-      (modules
-        &quot;viewslib0&quot;
-        &quot;{{name}}&quot;)
+    (library [
+      (name &quot;{{name}}&quot;);
+      (modules [ &quot;{{name}}&quot; ]);
+      (libraries [&quot;common&quot;]);
       (preprocess
-        (pps ppx_deriving.ord)))
+        (pps [&quot;ppx_deriving.ord&quot;]))])
   ]
 end
-</code></p><p>The full set of expressions is available in <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html"><code>DkmlDuneDsl.Dune.SYM</code></a>. The <code>res</code> result variable you write must be a list of type <code>[`Stanza] repr</code>.</p><h3 id="step-five---glue"><a href="#step-five---glue" class="anchor"></a>Step Five - Glue</h3><p>Write some small Dune glue in your &quot;dune&quot; file to execute your Dune configuration file with an interpreter. The only standard interpreter is the <b>dkml-dune-dsl-show</b> interpreter. The following snippet goes into the normal &quot;dune&quot; file, _not_ the DSL:</p><pre>(rule
+</code></p><p>Let's peek ahead for a second. Once we complete all the steps, the Dune DSL tooling should give us a valid Dune include file that looks roughly like:</p><pre>    (rule [
+      (deps [glob_files &quot;*_asset.png&quot;]);
+      (target &quot;common.ml&quot;);
+      (action
+        (run [&quot;something.exe&quot;; &quot;--output&quot;; &quot;%{target}&quot;; &quot;%{deps}&quot;]))]);
+    (library [
+      (name &quot;common&quot;);
+      (modules [ &quot;common&quot; ]);
+    ]);
+
+    (library [
+      (name &quot;batman&quot;);
+      (modules [ &quot;batman&quot; ]);
+      (libraries [&quot;common&quot;]);
+      (preprocess
+        (pps [&quot;ppx_deriving.ord&quot;]))])
+    (library [
+      (name &quot;robin&quot;);
+      (modules [ &quot;robin&quot; ]);
+      (libraries [&quot;common&quot;]);
+      (preprocess
+        (pps [&quot;ppx_deriving.ord&quot;]))])</pre><p>The full set of expressions is available in <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html"><code>DkmlDuneDsl.Dune.SYM</code></a>. The <code>res</code> result variable you write must be a list of type <code>[`Stanza] repr</code>.</p><p><i>If you have any stanza that does not use a parameter <code>&quot;{{ ... }}&quot;</code> you should wrap it in a <a href="DkmlDuneDsl/Dune/module-type-SYM/index.html#val-pragma"><code>DkmlDuneDsl.Dune.SYM.pragma</code></a>.</i></p><h3 id="step-five---glue"><a href="#step-five---glue" class="anchor"></a>Step Five - Glue</h3><p>Write some small Dune glue in your &quot;dune&quot; file to execute your Dune configuration file with an interpreter. The only standard interpreter is the <b>dkml-dune-dsl-show</b> interpreter. The following snippet goes into the normal &quot;dune&quot; file, _not_ the DSL:</p><pre>(rule
   (target dune_inc.ml)
   (action
     (with-stdout-to %{target}
