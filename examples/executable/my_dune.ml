@@ -8,7 +8,7 @@ module Build (I : Dune.SYM) = struct
       executable
         [
           name "example";
-          modules [ "example" ];
+          modules (set_of [ "example" ]);
           modes [ `Byte; `Mode (Best, Exe) ];
         ];
     ]

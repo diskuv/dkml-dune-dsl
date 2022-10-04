@@ -22,17 +22,19 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let _parameterize ~args s =
     _quote_if_needed @@ Mustache.render (Mustache.of_string s) args.params
 
-  let _atom atom = Some (Atom ({ row = 0; col = 0 }, atom, None))
+  let zero_pos = { row = 0; col = 0 }
+
+  let _atom atom = Some (Atom (zero_pos, atom, None))
   (* An [Atom] s-exp without comments or pos *)
 
   let _list l =
     Some
       (List
-         ( { row = 0; col = 0 },
+         ( zero_pos,
            List.filter_map
              (function None -> None | Some sexp -> Some (Sexp sexp))
              l,
-           { row = 0; col = 0 } ))
+           zero_pos ))
   (* A [List] s-exp without comments or pos inside the list items *)
 
   let _vararg_of_string ~args token sl =
@@ -44,6 +46,18 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     _list [ _atom token; _atom (_parameterize ~args s) ]
 
   let _spread args = List.map (fun child -> child args)
+
+  let _ordset_atom_list l =
+    List
+      (zero_pos, List.map (fun i -> Sexp (Atom (zero_pos, i, None))) l, zero_pos)
+
+  let _arg_of_ordset token (ordset : out) : t_or_comment list =
+    match ordset with
+    | Some (Atom (_, atom, _)) -> [ Sexp (_ordset_atom_list [ token; atom ]) ]
+    | Some (List (_, l, _)) -> [ Sexp (Atom (zero_pos, token, None)) ] @ l
+    | None -> [ Sexp (_ordset_atom_list [ token ]) ]
+
+  let _atomize_sexp = Sexplib.Sexp.to_string
 
   (** {2 Stanzas} *)
 
@@ -131,7 +145,23 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let name s args = _arg_of_string ~args "name" s
 
-  let libraries l args = _vararg_of_string ~args "libraries" l
+  let libraries l args =
+    let l' =
+      Stdlib.List.map
+        (function
+          | `L s -> [ _atom (_parameterize ~args s) ]
+          | `SplitL s -> (
+              match Sexplib.Sexp.of_string s with
+              | Atom a -> [ _atom (_parameterize ~args a) ]
+              | List [] -> []
+              | List l ->
+                  List.map
+                    (fun sexp ->
+                      _atom (_atomize_sexp sexp |> _parameterize ~args))
+                    l))
+        l
+    in
+    _list ([ _atom "libraries" ] @ List.flatten l')
 
   let show_compilation_mode = function
     | Byte -> "byte"
@@ -165,7 +195,12 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let modes l _args = _list ([ _atom "modes" ] @ List.map _mode l)
 
-  let modules l args = _vararg_of_string ~args "modules" l
+  let modules (ordset : [ `OrderedSet ] repr) _args =
+    match ordset _args with
+    | None -> _list [ _atom "modules" ]
+    | Some v ->
+        let v' = _arg_of_ordset "modules" (Some v) in
+        Some (List (zero_pos, v', zero_pos))
 
   let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
 
@@ -180,6 +215,44 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let staged_pps l args = _vararg_of_string ~args "staged_pps" l
 
   let future_syntax _args = _atom "future_syntax"
+
+  (** {4 Ordered Sets} *)
+
+  (* An ordered set is a non-empty sexp list of atoms and other ordered sets, or it is empty *)
+
+  let set_of l args : out =
+    match l with
+    | [] -> None
+    | l ->
+        let l' = List.map (fun s -> _parameterize ~args s) l in
+        Some (_ordset_atom_list l')
+
+  let standard _args : out = Some (Atom (zero_pos, ":standard", None))
+
+  let split s args : out =
+    let open Sexplib.Sexp in
+    match Sexplib.Sexp.of_string s with
+    | Atom s -> Some (Atom (zero_pos, _parameterize ~args s, None))
+    | List [] -> None
+    | List l ->
+        let l' = List.map _atomize_sexp l in
+        set_of l' args
+
+  let difference a_set b_set args : out =
+    match (a_set args, b_set args) with
+    | None, _ -> (* A - B = {} when A = {} *) None
+    | Some a, None -> (* A - B = A when B = {} *) Some a
+    | Some a, Some b ->
+        Some
+          (List
+             ( zero_pos,
+               [ Sexp a; Sexp (Atom (zero_pos, "\\", None)); Sexp b ],
+               zero_pos ))
+
+  let union (sets : [ `OrderedSet ] repr list) args : out =
+    match List.filter_map (fun child -> child args) sets with
+    | [] -> None
+    | l -> Some (List (zero_pos, List.map (fun sexp -> Sexp sexp) l, zero_pos))
 
   (** {3 Install} *)
 
