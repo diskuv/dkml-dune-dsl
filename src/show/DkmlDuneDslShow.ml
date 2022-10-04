@@ -63,6 +63,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let _atomize_sexp = Sexplib.Sexp.to_string
 
+  let _string_of_atoms_to_sexp_list s = Sexplib.Sexp.of_string ("(" ^ s ^ ")")
+
   (** {2 Stanzas} *)
 
   let rule l args = _list ([ _atom "rule" ] @ _spread args l)
@@ -156,7 +158,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
         (function
           | `L s -> [ _atom (_parameterize ~args s) ]
           | `SplitL s -> (
-              match Sexplib.Sexp.of_string s with
+              match _string_of_atoms_to_sexp_list s with
               | Atom a -> [ _atom (_parameterize ~args a) ]
               | List [] -> []
               | List l ->
@@ -236,7 +238,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let split s args : out =
     let open Sexplib.Sexp in
-    match Sexplib.Sexp.of_string s with
+    match _string_of_atoms_to_sexp_list s with
     | Atom s -> Some (Atom (zero_pos, _parameterize ~args s, None))
     | List [] -> None
     | List l ->

@@ -27,11 +27,7 @@
   "dkml-dune-dsl lets you define Dune files in OCaml code with your favorite auto-completing IDE, compile it to an executable, and use it as a generator of your dune.inc files.")
  (depends
   (ocaml
-   (>= 4.12.1))
-  (ounit2
-   (and
-    (>= 2.2.0)
-    :with-test))))
+   (>= 4.12.1))))
 
 (package
  (name dkml-dune-dsl-show)
@@ -49,7 +45,7 @@
    (>= 3.1.0))
   (sexp_pretty
    (>= v0.14))
-  (ounit2
+  (alcotest
    (and
-    (>= 2.2.0)
+    (>= 1.5.0)
     :with-test))))
