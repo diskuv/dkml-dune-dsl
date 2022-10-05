@@ -70,8 +70,46 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     List
       (zero_pos, List.map (fun i -> Sexp (Atom (zero_pos, i, None))) l, zero_pos)
 
+  (** Before we convert an ordset into a ['a repr = t_or_comment list] we
+      need to optimize it so it avoids the following:
+
+      Dune on https://dune.readthedocs.io/en/stable/concepts.html#ordered-set-language says:
+
+      > Note that inside an ordered set, the first element of a list cannot be an atom except
+      > if it starts with - or :.
+
+      So all one-element lists are promoted into atoms.
+  *)
   let _arg_of_ordset token (ordset : out) : t_or_comment list =
-    match ordset with
+    (* Post order traversal so leaves are visited first. That way [((((a))))] can
+       be promoted into [a]. *)
+    let rec promote_one_element_lists (ordset' : out) : out =
+      match ordset' with
+      | Some (Atom _) as a -> a
+      | None -> None
+      | Some (List (p1, l, p2)) -> (
+          (* visit children first *)
+          let l' =
+            List.map
+              (function
+                | Comment c -> Comment c
+                | Sexp sexp -> (
+                    match promote_one_element_lists (Some sexp) with
+                    | None -> failwith ""
+                    | Some sexp' -> Sexp sexp'))
+              l
+          in
+          (* post-order, simplify any one argument lists *)
+          match l' with
+          | [] -> None
+          | [ Sexp one_arg ] -> Some one_arg
+          (* nit: [ Comment _; Sexp _ ], [ Comment _; Comment _; Sexp _ ], etc. are not collapsed
+             with this (match l') code. Need to visit all the elements of l', but we can ignore
+             since we don't put comments in ordered sets. *)
+          | l'' -> Some (List (p1, l'', p2)))
+    in
+    (* promote, and then restructure so the result is a ['a repr] *)
+    match promote_one_element_lists ordset with
     | Some (Atom (_, atom, _)) -> [ Sexp (_ordset_atom_list [ token; atom ]) ]
     | Some (List (_, l, _)) -> [ Sexp (Atom (zero_pos, token, None)) ] @ l
     | None -> [ Sexp (_ordset_atom_list [ token ]) ]

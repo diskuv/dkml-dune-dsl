@@ -99,4 +99,28 @@ let () =
                 (layout_sexp "(App_p Section_p)")
                 (I.split " App_p  Section_p ") );
         ] );
+      ( "no-first-atom",
+        (* Dune on https://dune.readthedocs.io/en/stable/concepts.html#ordered-set-language says:
+
+            > Note that inside an ordered set, the first element of a list cannot be an atom except
+            > if it starts with - or :.
+
+           So we test an expression that uses the ordered set (modules ...) which exercises
+           the _arg_of_ordset logic that promotes single element lists into atoms.
+        *)
+        [
+          ( "((((a)))) (b c))",
+            `Quick,
+            fun () ->
+              repr_equals
+                (* Should NOT be: (modules ((((a)))) (b c)) *)
+                (layout_sexp "(modules a (b c))")
+                I.(
+                  modules
+                    (union
+                       [
+                         union [ union [ union [ set_of [ "a" ] ] ] ];
+                         set_of [ "b"; "c" ];
+                       ])) );
+        ] );
     ]
