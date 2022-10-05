@@ -211,6 +211,16 @@ module type SYM = sig
   val ocamlopt_flags :
     [ `OCamlOptFlag ] repr list -> [ `CommonExecutableLibrary ] repr
 
+  val wrapped : bool -> [ `CommonExecutableLibrary ] repr
+  (** [wrapped false] or [wrapped true] specifies whether the library modules should be available only
+      through the top-level library module, or if they should all be exposed at the top level.
+      
+      The default is [wrapped true], and it’s highly recommended to keep it this way. Because OCaml
+      top-level modules must all be unique when linking an executables, polluting the top-level namespace
+      will make your library unusable with other libraries if there is a module name clash. This option
+      is only intended for libraries that manually prefix all their modules by the library name and to
+      ease porting of existing projects to Dune. *)
+
   val preprocess : [ `PreprocessSpec ] repr -> [ `CommonExecutableLibrary ] repr
   (** [preprocess spec] specifies how to preprocess files when needed. The default
       is {!no_preprocessing}.

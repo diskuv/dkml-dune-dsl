@@ -226,6 +226,9 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
 
+  let wrapped b _args =
+    _list [ _atom "wrapped"; _atom (if b then "true" else "false") ]
+
   let preprocess spec args = _list [ _atom "preprocess"; spec args ]
 
   (** {4 Preprocessing} *)
