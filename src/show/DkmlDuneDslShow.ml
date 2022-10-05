@@ -24,7 +24,22 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** [_parameterize ~args s] renders any Mustache expressions in [s] using [json], and quotes
       the result if necessary *)
   let _parameterize ~args s =
-    _quote_if_needed @@ Mustache.render (Mustache.of_string s) args.params
+    let template =
+      try Mustache.of_string s
+      with e ->
+        let msg = Printexc.to_string e and stack = Printexc.get_backtrace () in
+        let underscores = String.map (fun _c -> '_') s in
+        Printf.eprintf
+          "FATAL: Could not decode the string value:\n\n\
+           %s\n\
+           %s\n\
+           %s\n\n\
+           as a valid Mustache template: %s%s\n"
+          underscores s underscores msg stack;
+        raise e
+    in
+    let rendered = Mustache.render template args.params in
+    _quote_if_needed @@ rendered
 
   let zero_pos = { row = 0; col = 0 }
 
