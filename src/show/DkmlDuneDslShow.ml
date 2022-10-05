@@ -17,10 +17,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   (** {2 Utilities} *)
 
-  let _quote_if_needed s =
-    let s' = String.escaped s in
-    if String.equal s s' then s else "\"" ^ s' ^ ""
-
   (** [_parameterize ~args s] renders any Mustache expressions in [s] using [json], and quotes
       the result if necessary *)
   let _parameterize ~args s =
@@ -38,8 +34,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
           underscores s underscores msg stack;
         raise e
     in
-    let rendered = Mustache.render template args.params in
-    _quote_if_needed @@ rendered
+    Mustache.render template args.params
 
   let zero_pos = { row = 0; col = 0 }
 
