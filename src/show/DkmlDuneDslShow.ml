@@ -252,9 +252,11 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let standard _args : out = Some (Atom (zero_pos, ":standard", None))
 
   let split s args : out =
-    let open Sexplib.Sexp in
-    match _string_of_atoms_to_sexp_list s with
-    | Atom s -> Some (Atom (zero_pos, _parameterize ~args s, None))
+    (* Split AFTER evaluating the parameters *)
+    let posteval = _parameterize ~args s in
+    (* Okay. Now is good to split *)
+    match _string_of_atoms_to_sexp_list posteval with
+    | Atom s -> Some (Atom (zero_pos, s, None))
     | List [] -> None
     | List l ->
         let l' = List.map _atomize_sexp l in

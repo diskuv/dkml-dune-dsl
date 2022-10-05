@@ -1,16 +1,21 @@
 open DkmlDuneDslShow
 open Sexplib
 
-let args = { params = `O []; params_idx = 0; entire_params_file = `O [] }
+let mock_args =
+  {
+    params = `O [ ("test-param-string", `String "testvalue") ];
+    params_idx = 0;
+    entire_params_file = `O [];
+  }
 
 let check_repr =
   let pp fmt (repr : args -> out) =
-    let out = repr args in
+    let out = repr mock_args in
     let out_plain_sexp = Option.map Sexp.With_layout.Forget.t out in
     Fmt.(option Sexplib0.Sexp.pp_mach) fmt out_plain_sexp
   in
   Alcotest.testable pp (fun a b ->
-      let a_out = a args and b_out = b args in
+      let a_out = a mock_args and b_out = b mock_args in
       match (a_out, b_out) with
       | None, Some _ | Some _, None -> false
       | None, None -> true
@@ -22,6 +27,8 @@ let check_repr =
 let repr_equals = Alcotest.check check_repr "equals"
 
 let zero_pos = { Sexp.With_layout.row = 0; col = 0 }
+
+let no_sexp _args = None
 
 let rec sexp_to_sexp_with_layout = function
   | Sexp.Atom a -> Sexp.With_layout.Atom (zero_pos, a, None)
@@ -43,9 +50,7 @@ let () =
     [
       ( "set_of",
         [
-          ( "no items",
-            `Quick,
-            fun () -> repr_equals (fun _args -> None) (I.set_of []) );
+          ("no items", `Quick, fun () -> repr_equals no_sexp (I.set_of []));
           ( "one item",
             `Quick,
             fun () -> repr_equals (layout_sexp "(hi)") (I.set_of [ "hi" ]) );
@@ -57,13 +62,37 @@ let () =
         ] );
       ( "standard",
         [
-          ( "no items",
+          ( ":standard",
             `Quick,
             fun () -> repr_equals (layout_sexp ":standard") I.standard );
         ] );
       ( "split",
         [
-          ( "no items",
+          ( "expected failure: unclosed Mustache loop",
+            `Quick,
+            fun () ->
+              let raised =
+                try
+                  let (_ : out) = I.split "{{#test-param-string}}" mock_args in
+                  false
+                with _e -> true
+              in
+              if not raised then
+                fail "Expected but did not get Mustache failure" );
+          ( "split after params evaluated",
+            `Quick,
+            fun () ->
+              repr_equals no_sexp
+                (* this is a regression test. if splitting happens before
+                   params are evaluated, then you will get
+                   ["{{#test-param-string}}"; "{{/test-param-string}}"] atoms,
+                   and those atoms will fail parameter evaluation. We
+                   tested the unclosed Mustache loop atom in the previous test
+                   case to make sure it fails!
+
+                   Only if split is done after params can this be valid. *)
+                (I.split "{{#test-param-string}} {{/test-param-string}}") );
+          ( "two items",
             `Quick,
             fun () ->
               repr_equals
