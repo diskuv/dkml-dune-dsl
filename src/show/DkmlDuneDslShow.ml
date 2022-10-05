@@ -70,6 +70,14 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     List
       (zero_pos, List.map (fun i -> Sexp (Atom (zero_pos, i, None))) l, zero_pos)
 
+  (** An empty set. For now the simplest expression is (:standard \ :standard)  *)
+  let _empty_set =
+    [
+      Sexp (Atom (zero_pos, ":standard", None));
+      Sexp (Atom (zero_pos, "\\", None));
+      Sexp (Atom (zero_pos, ":standard", None));
+    ]
+
   (** Before we convert an ordset into a ['a repr = t_or_comment list] we
       need to optimize it so it avoids the following:
 
@@ -78,9 +86,18 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       > Note that inside an ordered set, the first element of a list cannot be an atom except
       > if it starts with - or :.
 
-      So all one-element lists are promoted into atoms.
+      The solution given will not work with our s-exp pretty printer (or any!):
+
+      > If you want to write a list where the first element doesn’t start with -, you can simply
+      > quote it: ("x" y z).
+
+      So:
+      
+      + all one-element lists are promoted into atoms (which is not sufficient by itself)
+      + all lists with an atom as the first argument are prepended with the empty set
+        expression (:standard \ :standard)
   *)
-  let _arg_of_ordset token (ordset : out) : t_or_comment list =
+  let _arg_of_ordset token (ordset : out) : t option =
     (* Post order traversal so leaves are visited first. That way [((((a))))] can
        be promoted into [a]. *)
     let rec promote_one_element_lists (ordset' : out) : out =
@@ -106,13 +123,22 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
           (* nit: [ Comment _; Sexp _ ], [ Comment _; Comment _; Sexp _ ], etc. are not collapsed
              with this (match l') code. Need to visit all the elements of l', but we can ignore
              since we don't put comments in ordered sets. *)
+          | Sexp (Atom (_, _, _)) :: _tl as all_args ->
+              (* Add the empty set to lists with an atomic first argument . It must be
+                 isolated with enclosing parenthese so the different operator "\" does not
+                 affect the remaining arguments "*)
+              let isolated_empty_set =
+                Sexp (List (zero_pos, _empty_set, zero_pos))
+              in
+              Some (List (p1, isolated_empty_set :: all_args, p1))
           | l'' -> Some (List (p1, l'', p2)))
     in
     (* promote, and then restructure so the result is a ['a repr] *)
     match promote_one_element_lists ordset with
-    | Some (Atom (_, atom, _)) -> [ Sexp (_ordset_atom_list [ token; atom ]) ]
-    | Some (List (_, l, _)) -> [ Sexp (Atom (zero_pos, token, None)) ] @ l
-    | None -> [ Sexp (_ordset_atom_list [ token ]) ]
+    | Some (Atom (_, atom, _)) -> Some (_ordset_atom_list [ token; atom ])
+    | Some (List (p1, l, p2)) ->
+        Some (List (p1, Sexp (Atom (zero_pos, token, None)) :: l, p2))
+    | None -> Some (_ordset_atom_list [ token ])
 
   let _atomize_sexp = Sexplib.Sexp.to_string
 
@@ -256,11 +282,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let modes l _args = _list ([ _atom "modes" ] @ List.map _mode l)
 
   let modules (ordset : [ `OrderedSet ] repr) _args =
-    match ordset _args with
-    | None -> _list [ _atom "modules" ]
-    | Some v ->
-        let v' = _arg_of_ordset "modules" (Some v) in
-        Some (List (zero_pos, v', zero_pos))
+    let final_ordset = ordset _args in
+    _arg_of_ordset "modules" final_ordset
 
   let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
 

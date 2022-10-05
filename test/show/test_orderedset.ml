@@ -114,7 +114,9 @@ let () =
             fun () ->
               repr_equals
                 (* Should NOT be: (modules ((((a)))) (b c)) *)
-                (layout_sexp "(modules a (b c))")
+                (layout_sexp
+                   "(modules (:standard \\ :standard) a ((:standard \\ \
+                    :standard) b c))")
                 I.(
                   modules
                     (union
