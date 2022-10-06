@@ -232,14 +232,11 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
         (function
           | `L s -> [ _atom (_parameterize ~args s) ]
           | `SplitL s -> (
-              match _string_of_atoms_to_sexp_list s with
-              | Atom a -> [ _atom (_parameterize ~args a) ]
+              let s' = _parameterize ~args s in
+              match _string_of_atoms_to_sexp_list s' with
+              | Atom a -> [ _atom a ]
               | List [] -> []
-              | List l ->
-                  List.map
-                    (fun sexp ->
-                      _atom (_atomize_sexp sexp |> _parameterize ~args))
-                    l))
+              | List l -> List.map (fun sexp -> _atom (_atomize_sexp sexp)) l))
         l
     in
     _list ([ _atom "libraries" ] @ List.flatten l')
