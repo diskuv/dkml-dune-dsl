@@ -1,3 +1,5 @@
+open Astring
+
 type args = {
   params : Mustache.Json.t;
   params_idx : int;
@@ -375,14 +377,39 @@ let json_from_argv () : params_avail * Mustache.Json.t =
 
 (* CLI entry points *)
 
+let known_toplevel_keys = [ "param-sets" ]
+
 let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
   (* Get the JSON *)
   let params_avail, entire_params_file = json_from_argv () in
   (* Parse JSON *)
   let param_sets =
-    (* Validate it is an object *)
+    (* Validate it is an object, with keys having underscores or being part of the known
+       toplevel keys *)
     (match entire_params_file with
-    | `O _ -> ()
+    | `O l ->
+        List.iter
+          (fun (key, _value) ->
+            if String.is_prefix ~affix:"_" key then ()
+            else if List.mem key known_toplevel_keys then ()
+            else
+              let msg =
+                Format.asprintf
+                  "@[The JSON parameter file has a toplevel key @['%s'@]@ that \
+                   is not part of the known keys@ (@[%a@])@ nor does it start \
+                   with an underscore.@ Start your key with an underscore if \
+                   you want your own custom key.@ @[Example: @['_%s'@]@].@ The \
+                   parameter file was:@ @[%s@]@]"
+                  key
+                  (Format.pp_print_list
+                     ~pp_sep:(fun fmt _v -> Format.pp_print_string fmt ", ")
+                     Format.pp_print_string)
+                  known_toplevel_keys key
+                  (Ezjsonm.to_string entire_params_file)
+              in
+              prerr_endline @@ "FATAL: " ^ msg;
+              failwith msg)
+          l
     | _ ->
         let msg =
           Printf.sprintf
@@ -435,12 +462,12 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
             (* Describe the parameter set *)
             let ps_description = Ezjsonm.value_to_string param_set in
             let ps_description_l =
-              Astring.String.cuts ~sep:"\n" ps_description
+              String.cuts ~sep:"\n" ps_description
               |> List.map (fun s -> ";   " ^ s)
             in
             let ps_description_commented =
               Printf.sprintf "; Parameter Set =\n%s"
-                (String.concat "\n" ps_description_l)
+                (String.concat ~sep:"\n" ps_description_l)
             in
             let ps_comment =
               Comment

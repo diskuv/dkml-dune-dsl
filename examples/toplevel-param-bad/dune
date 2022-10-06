@@ -1,0 +1,25 @@
+(rule
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+
+(executable
+ (name dune_inc)
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl-show))
+
+; The test is to check the exit code ... we expect exit code 2.
+; Confer Unix.handle_unix_error at https://v2.ocaml.org/api/Unix.html.
+
+(rule
+ (alias runtest)
+ (action
+  (with-accepted-exit-codes
+   2
+   (setenv
+    OCAMLRUNPARAM
+    b
+    (run ./dune_inc.exe %{dep:dune-parameters.json})))))

@@ -1,0 +1,6 @@
+{
+  "bad-key-because-unknown-and-not-starting-with-underscore": true,
+  "param-sets": [
+    {}
+  ]
+}
