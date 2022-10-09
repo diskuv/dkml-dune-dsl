@@ -175,6 +175,17 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let action a args = _list [ _atom "action"; a args ]
 
+  type mode = Standard | Fallback | Promote
+
+  let mode mode _args =
+    let mode_args =
+      match mode with
+      | Standard -> [ _atom "standard" ]
+      | Fallback -> [ _atom "fallback" ]
+      | Promote -> [ _atom "promote" ]
+    in
+    _list ([ _atom "mode" ] @ mode_args)
+
   (** {4 Dependencies} *)
 
   let glob_files globstring args = _arg_of_string ~args "glob_files" globstring
