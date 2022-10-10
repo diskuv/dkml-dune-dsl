@@ -15,7 +15,7 @@ module type SYM = sig
   val rule : [ `RuleClause ] repr list -> [ `Stanza ] repr
   (** The [rule [rule_clause1 ...]] stanza is used to create custom user rules. It tells Dune how to generate a specific set of files from a specific set of dependencies. *)
 
-  val executable : [ `CommonExecutableLibrary ] repr list -> [ `Stanza ] repr
+  val executable : [ `Executable ] repr list -> [ `Stanza ] repr
   (** The [executable [name "<name>"; ...]] stanza must be used to describe an executable.
 
       ["<name>"] is a module name that contains the executable’s main entry point. There can be additional
@@ -25,7 +25,7 @@ module type SYM = sig
       (see the {!modes} optional field below).
   *)
 
-  val library : [ `CommonExecutableLibrary ] repr list -> [ `Stanza ] repr
+  val library : [ `Library ] repr list -> [ `Stanza ] repr
   (** The [library [name "<library-name>"; ...]] stanza must be used to describe OCaml libraries.
 
       ["<library-name>"] is the real name of the library. It determines the names of the archive files
@@ -122,13 +122,15 @@ module type SYM = sig
 
   (** {3 Executables and Libraries} *)
 
-  val public_name : string -> [ `CommonExecutableLibrary ] repr
+  (** This section has expressions that work in both {!executable} and {!library} stanzas. *)
 
-  val name : string -> [ `CommonExecutableLibrary ] repr
+  val public_name : string -> [< `Executable | `Library ] repr
+
+  val name : string -> [< `Executable | `Library ] repr
 
   val libraries :
     [ `L of string | `SplitL of string ] list ->
-    [ `CommonExecutableLibrary ] repr
+    [< `Executable | `Library ] repr
   (** [libraries] specifies the library’s dependencies.
 
       - [`L "library"] is an individual library.
@@ -141,7 +143,7 @@ module type SYM = sig
       - [`Re_export ...]
   *)
 
-  val modules : [ `OrderedSet ] repr -> [ `CommonExecutableLibrary ] repr
+  val modules : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
   (** [modules ordered_set] specifies what modules are part of the library.
 
       By default, Dune will use all the .ml/.re files in the same directory as the dune file. This includes ones
@@ -190,7 +192,7 @@ module type SYM = sig
     | `Byte_complete
     | `Mode of compilation_mode * binary_kind ]
     list ->
-    [ `CommonExecutableLibrary ] repr
+    [< `Executable | `Library ] repr
   (** The [modes] field allows selecting which linking modes will be used to link executables. Each mode is a
       pair (<compilation-mode> <binary-kind>), where <compilation-mode> describes whether the bytecode or
       native code backend of the OCaml compiler should be used and <binary-kind> describes what kind of file
@@ -223,9 +225,9 @@ module type SYM = sig
   *)
 
   val ocamlopt_flags :
-    [ `OCamlOptFlag ] repr list -> [ `CommonExecutableLibrary ] repr
+    [ `OCamlOptFlag ] repr list -> [< `Executable | `Library ] repr
 
-  val wrapped : bool -> [ `CommonExecutableLibrary ] repr
+  val wrapped : bool -> [< `Executable | `Library ] repr
   (** [wrapped false] or [wrapped true] specifies whether the library modules should be available only
       through the top-level library module, or if they should all be exposed at the top level.
 
@@ -235,7 +237,7 @@ module type SYM = sig
       is only intended for libraries that manually prefix all their modules by the library name and to
       ease porting of existing projects to Dune. *)
 
-  val preprocess : [ `PreprocessSpec ] repr -> [ `CommonExecutableLibrary ] repr
+  val preprocess : [ `PreprocessSpec ] repr -> [< `Executable | `Library ] repr
   (** [preprocess spec] specifies how to preprocess files when needed. The default
       is {!no_preprocessing}.
 
@@ -320,6 +322,28 @@ module type SYM = sig
   val difference :
     [ `OrderedSet ] repr -> [ `OrderedSet ] repr -> [ `OrderedSet ] repr
   (** [difference a_set b_set] is all the arguments from [a_set] that are not in [b_set] *)
+
+  (** {3:Libraries Libraries} *)
+
+  val virtual_modules : [ `OrderedSet ] repr -> [ `Library ] repr
+  (** [virtual_modules ordered_set] specifies what modules for which only an interface would be present, and which
+      will have implementations defined in other libraries.
+
+      The virtual modules play the role of interfaces or protocols in
+      {{:https://dune.readthedocs.io/en/stable/variants.html#virtual-library}Dune virtual libraries}.
+
+      See {!section-Ordered-Sets} for the operations you can perform. *)
+
+  val implements : string -> [ `Library ] repr
+  (** [implements libname] specifies the virtual library the current library (the implementing library)
+      provides an implementation for.
+
+      See {{:https://dune.readthedocs.io/en/stable/variants.html#virtual-library}Dune virtual libraries}
+      for more details. *)
+
+  (** {3:Executables Executables}
+      
+      As of this version there are no executable-only clauses. *)
 
   (** {3 Install} *)
 

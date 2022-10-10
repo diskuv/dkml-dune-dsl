@@ -286,8 +286,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let modes l _args = _list ([ _atom "modes" ] @ List.map _mode l)
 
-  let modules (ordset : [ `OrderedSet ] repr) _args =
-    let final_ordset = ordset _args in
+  let modules (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
     _arg_of_ordset "modules" final_ordset
 
   let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
@@ -346,6 +346,16 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     match List.filter_map (fun child -> child args) sets with
     | [] -> None
     | l -> Some (List (zero_pos, List.map (fun sexp -> Sexp sexp) l, zero_pos))
+
+  (** {3:Libraries Libraries} *)
+
+  let virtual_modules (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "virtual_modules" final_ordset
+
+  let implements libname args = _arg_of_string ~args "implements" libname
+
+  (** {3:Executables Executables} *)
 
   (** {3 Install} *)
 
