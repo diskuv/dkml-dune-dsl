@@ -100,6 +100,9 @@ module type SYM = sig
   val progn : [ `Action ] repr list -> [ `Action ] repr
   (** [progn [action1; action2; ...]] executes several actions [action1; ...] in sequence *)
 
+  val copy : src:string -> dest:string -> [ `Action ] repr
+  (** [copy ~src ~dest] copies the [src] file to [dest] *)
+
   val run : string list -> [ `Action ] repr
   (** [run [prog; arg1; arg2; ...]] runs the program [prog] and gives it arguments [arg1; arg2; ...]. *)
 
