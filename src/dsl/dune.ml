@@ -344,6 +344,10 @@ module type SYM = sig
       See {{:https://dune.readthedocs.io/en/stable/variants.html#virtual-library}Dune virtual libraries}
       for more details. *)
 
+  val default_implementation : string -> [ `Library ] repr
+  (** [default_implementation default_impl] selects the default implementation for a virtual library, which
+      is enabled after variant resolution if no suitable implementation has been found. *)
+
   (** {3:Executables Executables}
       
       As of this version there are no executable-only clauses. *)

@@ -357,6 +357,9 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let implements libname args = _arg_of_string ~args "implements" libname
 
+  let default_implementation impl args =
+    _arg_of_string ~args "default_implementation" impl
+
   (** {3:Executables Executables} *)
 
   (** {3 Install} *)
