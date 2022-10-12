@@ -53,13 +53,33 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
            zero_pos ))
   (* A [List] s-exp without comments or pos inside the list items *)
 
+  let _atomize_sexp = Sexplib.Sexp.to_string
+
+  let _string_of_atoms_to_sexp_list s = Sexplib.Sexp.of_string ("(" ^ s ^ ")")
+
+  let _splittable_string_list l args =
+    List.flatten
+    @@ List.map
+         (function
+           | `S s -> [ _atom (_parameterize ~args s) ]
+           | `Split s -> (
+               let s' = _parameterize ~args s in
+               match _string_of_atoms_to_sexp_list s' with
+               | Atom a -> [ _atom a ]
+               | List [] -> []
+               | List l -> List.map (fun sexp -> _atom (_atomize_sexp sexp)) l))
+         l
+
+  let _arg_of_string ~args token s =
+    _list [ _atom token; _atom (_parameterize ~args s) ]
+
   let _vararg_of_string ~args token sl =
     _list
       ([ _atom token ]
       @ Stdlib.List.map (fun s -> _atom (_parameterize ~args s)) sl)
 
-  let _arg_of_string ~args token s =
-    _list [ _atom token; _atom (_parameterize ~args s) ]
+  let _vararg_of_splittable_string ~args token sl =
+    _list ([ _atom token ] @ _splittable_string_list sl args)
 
   let _spread args = List.map (fun child -> child args)
 
@@ -137,10 +157,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
         Some (List (p1, Sexp (Atom (zero_pos, token, None)) :: l, p2))
     | None -> Some (_ordset_atom_list [ token ])
 
-  let _atomize_sexp = Sexplib.Sexp.to_string
-
-  let _string_of_atoms_to_sexp_list s = Sexplib.Sexp.of_string ("(" ^ s ^ ")")
-
   (** {2 Stanzas} *)
 
   let rule l args = _list ([ _atom "rule" ] @ _spread args l)
@@ -167,7 +183,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let alias s args = _arg_of_string ~args "alias" s
 
-  let targets l args = _vararg_of_string ~args "targets" l
+  let targets l args = _vararg_of_splittable_string ~args "targets" l
 
   let target s args = _arg_of_string ~args "target" s
 
@@ -208,7 +224,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let copy ~src ~dest args = _vararg_of_string ~args "copy" [ src; dest ]
 
-  let run l args = _vararg_of_string ~args "run" l
+  let run l args = _vararg_of_splittable_string ~args "run" l
 
   let diff ~actual ~expected args =
     _list
@@ -242,19 +258,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let name s args = _arg_of_string ~args "name" s
 
   let libraries l args =
-    let l' =
-      Stdlib.List.map
-        (function
-          | `L s -> [ _atom (_parameterize ~args s) ]
-          | `SplitL s -> (
-              let s' = _parameterize ~args s in
-              match _string_of_atoms_to_sexp_list s' with
-              | Atom a -> [ _atom a ]
-              | List [] -> []
-              | List l -> List.map (fun sexp -> _atom (_atomize_sexp sexp)) l))
-        l
-    in
-    _list ([ _atom "libraries" ] @ List.flatten l')
+    _list ([ _atom "libraries" ] @ _splittable_string_list l args)
 
   let show_compilation_mode = function
     | Byte -> "byte"
@@ -303,9 +307,9 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let no_preprocessing _args = _atom "no_preprocessing"
 
-  let pps l args = _vararg_of_string ~args "pps" l
+  let pps l args = _vararg_of_splittable_string ~args "pps" l
 
-  let staged_pps l args = _vararg_of_string ~args "staged_pps" l
+  let staged_pps l args = _vararg_of_splittable_string ~args "staged_pps" l
 
   let future_syntax _args = _atom "future_syntax"
 

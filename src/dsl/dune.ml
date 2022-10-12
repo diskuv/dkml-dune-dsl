@@ -3,6 +3,36 @@
     {b dune} files are the main part of Dune. They are used to describe libraries, executables, tests, and everything Dune needs to know about.
 
     The official documentation is {{:https://dune.readthedocs.io/en/stable/dune-files.html#dune}on the Dune website}.
+
+    {2 Argument Handling}
+
+    Many Dune expressions have a list of strings as arguments. For example, the {!libraries} expression declares the list of
+    libraries that an executable needs. Use one of the following variants to tell the expression interpreter how to
+    process your string argument:
+
+    - [`S "something"] is a literal string
+    - [`Split "something1 something2 ..."] is zero or more strings split by whitespace (roughly speaking). The formal
+      splitting algorithm follows the
+      {{:https://github.com/janestreet/sexplib#lexical-conventions-of-s-expression}Lexical conventions of s-expression}
+      for identifying atoms in a list.
+
+    All the expressions below are equivalent:
+
+    [
+      (libraries [`S "lib1"; `S "lib2"; `S "lib3"])
+
+      (libraries [`Split "lib1 lib2 lib3"])
+
+      (libraries [`S "lib1"; `Split "lib2 lib3"])
+    ]
+
+    Why use [`Split]? Besides saving a bit of typing for long lists, a [`Split] is the right choice when your interpreter
+    supports parameterized strings. For example, if you were using the ["dkml-dune-dsl-show"] interpreter and configured
+    it with a JSON parameter file, you could use [`Split "{{#libraries}} {{library}} {{/libraries}}"] and
+    the ["dkml-dune-dsl-show"] interpreter would:
+    
+    + concatenate all of the [libraries] JSON array from the JSON parameter file into a space separated list of libraries
+    + [`Split] would then split the space separated list of libraries into the individual libraries.
 *)
 
 (** The module type for an embedded domain specific language (eDSL) that describes a Dune file. *)
@@ -55,7 +85,8 @@ module type SYM = sig
 
   val alias : string -> [ `RuleClause ] repr
 
-  val targets : string list -> [ `RuleClause ] repr
+  val targets :
+    [< `S of string | `Split of string ] list -> [ `RuleClause ] repr
 
   val target : string -> [ `RuleClause ] repr
 
@@ -103,8 +134,8 @@ module type SYM = sig
   val copy : src:string -> dest:string -> [ `Action ] repr
   (** [copy ~src ~dest] copies the [src] file to [dest] *)
 
-  val run : string list -> [ `Action ] repr
-  (** [run [prog; arg1; arg2; ...]] runs the program [prog] and gives it arguments [arg1; arg2; ...]. *)
+  val run : [< `S of string | `Split of string ] list -> [ `Action ] repr
+  (** [run [`S prog; `S arg1; `S arg2; ...]] runs the program [prog] and gives it arguments [arg1; arg2; ...]. *)
 
   val diff : actual:string -> expected:string -> [ `Action ] repr
   (** [diff ~actual ~expected] is similar to [run ["diff"; "<actual>"; "<expected>"]] but is
@@ -132,19 +163,9 @@ module type SYM = sig
   val name : string -> [< `Executable | `Library ] repr
 
   val libraries :
-    [ `L of string | `SplitL of string ] list ->
+    [< `S of string | `Split of string ] list ->
     [< `Executable | `Library ] repr
-  (** [libraries] specifies the library’s dependencies.
-
-      - [`L "library"] is an individual library.
-      - [`SplitL "library1 library2 ..."] is zero or more libraries split according to the
-        {{:https://github.com/janestreet/sexplib#lexical-conventions-of-s-expression}Lexical conventions of s-expression}
-        for identifying atoms in a list.
-
-      At least two other variants are reserved but have not been implemented:
-      - [`Select ...]
-      - [`Re_export ...]
-  *)
+  (** [libraries [`S lib1; `S lib2; ...]] specifies the library’s dependencies *)
 
   val modules : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
   (** [modules ordered_set] specifies what modules are part of the library.
@@ -251,11 +272,13 @@ module type SYM = sig
   val no_preprocessing : [ `PreprocessSpec ] repr
   (** [no_preprocessing] tells Dune to give files as-is to the compiler *)
 
-  val pps : string list -> [ `PreprocessSpec ] repr
-  (** [pps [ppx1; ppx2; ...]] preprocesses files using the given list of PPX rewriters *)
+  val pps :
+    [< `S of string | `Split of string ] list -> [ `PreprocessSpec ] repr
+  (** [pps [`S ppx1; `S ppx2; ...]] preprocesses files using the given list of PPX rewriters *)
 
-  val staged_pps : string list -> [ `PreprocessSpec ] repr
-  (** [staged_pps [ppx1; ppx2; ...]] preprocesses files using the given list of PPX rewriters
+  val staged_pps :
+    [< `S of string | `Split of string ] list -> [ `PreprocessSpec ] repr
+  (** [staged_pps [`S ppx1; `S ppx2; ...]] preprocesses files using the given list of PPX rewriters
       {b after} dependency analysis.
 
       It is slower than {!pps}, but you must use [staged_pps] instead of [pps] in order to force

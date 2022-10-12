@@ -19,7 +19,7 @@ module Build (I : Dune.SYM) = struct
       rule
         [
           target "all.txt";
-          action (with_stdout_to "%{target}" (run [ "./do_all.exe" ]));
+          action (with_stdout_to "%{target}" (run [ `S "./do_all.exe" ]));
         ];
     ]
 end
