@@ -78,8 +78,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       ([ _atom token ]
       @ Stdlib.List.map (fun s -> _atom (_parameterize ~args s)) sl)
 
-  let _vararg_of_splittable_string ~args token sl =
-    _list ([ _atom token ] @ _splittable_string_list sl args)
+  let _vararg_of_splittable_string ?none_when_empty ~args token sl =
+    match (none_when_empty, _splittable_string_list sl args) with
+    | Some (), l when List.filter_map Fun.id l |> List.length = 0 -> None
+    | _, strings -> _list ([ _atom token ] @ strings)
 
   let _spread args = List.map (fun child -> child args)
 
@@ -301,15 +303,23 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let wrapped b _args =
     _list [ _atom "wrapped"; _atom (if b then "true" else "false") ]
 
-  let preprocess spec args = _list [ _atom "preprocess"; spec args ]
+  let preprocess spec args =
+    (* Dune does not accept empty-arg (preprocess) so we remove it *)
+    match spec args with
+    | None -> None
+    | Some v -> _list [ _atom "preprocess"; Some v ]
 
   (** {4 Preprocessing} *)
 
   let no_preprocessing _args = _atom "no_preprocessing"
 
-  let pps l args = _vararg_of_splittable_string ~args "pps" l
+  let pps l args =
+    (* Dune does not accept empty-arg (preprocess (pps)) so we remove it *)
+    _vararg_of_splittable_string ~none_when_empty:() ~args "pps" l
 
-  let staged_pps l args = _vararg_of_splittable_string ~args "staged_pps" l
+  let staged_pps l args =
+    (* Dune does not accept empty-arg (preprocess (staged_pps)) so we remove it *)
+    _vararg_of_splittable_string ~none_when_empty:() ~args "staged_pps" l
 
   let future_syntax _args = _atom "future_syntax"
 
