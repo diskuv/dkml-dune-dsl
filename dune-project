@@ -41,7 +41,8 @@
  (depends
   (ocaml
    (>= 4.12.1))
-  (dkml-dune-dsl :version)
+  (dkml-dune-dsl
+   (= :version))
   (astring
    (>= 0.8.5))
   (ezjsonm
