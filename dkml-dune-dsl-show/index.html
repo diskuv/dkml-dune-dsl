@@ -1,2 +1,26 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (dkml-dune-dsl-show.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.1.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – dkml-dune-dsl-show</nav><header class="odoc-preamble"><h1 id="dkml-dune-dsl-show-index"><a href="#dkml-dune-dsl-show-index" class="anchor"></a>dkml-dune-dsl-show index</h1></header><nav class="odoc-toc"><ul><li><a href="#library-dkml-dune-dsl-show">Library dkml-dune-dsl-show</a></li></ul></nav><div class="odoc-content"><h2 id="library-dkml-dune-dsl-show"><a href="#library-dkml-dune-dsl-show" class="anchor"></a>Library dkml-dune-dsl-show</h2><p>The entry point of this library is the module: <a href="DkmlDuneDslShow/index.html"><code>DkmlDuneDslShow</code></a>.</p></div></body></html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (dkml-dune-dsl-show.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc 2.1.1"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – dkml-dune-dsl-show</nav><header class="odoc-preamble"><h1 id="dsl_show"><a href="#dsl_show" class="anchor"></a>dkml-dune-dsl-show index</h1></header><nav class="odoc-toc"><ul><li><a href="#library-dkml-dune-dsl-show">Library dkml-dune-dsl-show</a></li></ul></nav><div class="odoc-content"><h2 id="library-dkml-dune-dsl-show"><a href="#library-dkml-dune-dsl-show" class="anchor"></a>Library dkml-dune-dsl-show</h2><p>The entry point of this library is the module: <a href="DkmlDuneDslShow/index.html"><code>DkmlDuneDslShow</code></a>.</p><p>You use this library by:</p><ol><li>applying the <code>DkmlDuneDslShow.I</code> <b>interpreter</b> module to your Dune DSL expression</li><li>converting the last step into an executable</li><li>run the executable, capturing its results into a <code>&quot;dune.inc&quot;</code> include file</li><li>running the <code>&quot;dune.inc&quot;</code> as part of your Dune build</li></ol><p>All of that is represented by the following Dune snippet:</p><pre>(rule
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    ; YOU: Change &quot;My_dune&quot; to the name of your Dune DSL expression module
+    &quot;module M = My_dune.Build (DkmlDuneDslShow.I)
+     let () = print_string @@ DkmlDuneDslShow.plain_hum M.res&quot;))))
+
+(executable
+ (name dune_inc)
+ ; YOU: Change &quot;my_dune&quot; to the name of your Dune DSL file
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl-show))
+
+(rule
+ (target dune.inc)
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./dune_inc.exe))))
+
+(include dune.inc)</pre><p>You will need to change <code>&quot;my_dune&quot;</code> and the corresponding name of the module (<code>&quot;My_dune&quot;</code>) in the above snippet.</p></div></body></html>
