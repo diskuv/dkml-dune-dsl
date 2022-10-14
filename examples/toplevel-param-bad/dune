@@ -8,6 +8,8 @@
 
 (executable
  (name dune_inc)
+ (public_name dkml-dune-dsl-show-toplevel-param-bad)
+ (package dkml-dune-dsl-show)
  (modules dune_inc my_dune)
  (libraries dkml-dune-dsl-show))
 
@@ -16,6 +18,7 @@
 
 (rule
  (alias runtest)
+ (package dkml-dune-dsl-show)
  (action
   (with-accepted-exit-codes
    2

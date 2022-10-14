@@ -1,3 +1,4 @@
 (tests
  (names test_orderedset)
+ (package dkml-dune-dsl-show)
  (libraries dkml-dune-dsl-show alcotest fmt))
