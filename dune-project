@@ -46,6 +46,8 @@
    (>= 0.8.5))
   (ezjsonm
    (>= 1.3.0))
+  (fmt
+   (>= 0.9.0))
   (mustache
    (>= 3.1.0))
   (sexp_pretty
