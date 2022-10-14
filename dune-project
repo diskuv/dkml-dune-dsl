@@ -19,6 +19,8 @@
 
 (bug_reports "https://github.com/diskuv/dkml-dune-dsl/issues")
 
+(documentation "https://diskuv.github.io/dkml-dune-dsl/dkml-dune-dsl/index.html")
+
 (package
  (name dkml-dune-dsl)
  (synopsis
@@ -33,6 +35,7 @@
  (name dkml-dune-dsl-show)
  (synopsis
   "An interpreter for the embedded DSL of Dune that shows the DSL as a real Dune file")
+ (documentation "https://diskuv.github.io/dkml-dune-dsl/dkml-dune-dsl-show/index.html")
  (depends
   (ocaml
    (>= 4.12.1))

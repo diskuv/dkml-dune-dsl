@@ -5,7 +5,8 @@ The entry point of this library is the module:
 {!module-DkmlDuneDslShow}.
 
 You use this library by:
-+ applying the [DkmlDuneDslShow.I] {b interpreter} module to your Dune DSL expression
++ applying the [DkmlDuneDslShow.I] {b interpreter} module to your
+  {{:https://diskuv.github.io/dkml-dune-dsl/dkml-dune-dsl/index.html}Dune DSL expression}
 + converting the last step into an executable
 + run the executable, capturing its results into a ["dune.inc"]
   include file
