@@ -1,0 +1,44 @@
+{0:dsl_show dkml-dune-dsl-show index}
+
+{1 Library dkml-dune-dsl-show}
+The entry point of this library is the module:
+{!module-DkmlDuneDslShow}.
+
+You use this library by:
++ applying the [DkmlDuneDslShow.I] {b interpreter} module to your Dune DSL expression
++ converting the last step into an executable
++ run the executable, capturing its results into a ["dune.inc"]
+  include file
++ running the ["dune.inc"] as part of your Dune build
+
+All of that is represented by the following Dune snippet:
+
+{v
+(rule
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    ; YOU: Change "My_dune" to the name of your Dune DSL expression module
+    "module M = My_dune.Build (DkmlDuneDslShow.I)
+     let () = print_string @@ DkmlDuneDslShow.plain_hum M.res"))))
+
+(executable
+ (name dune_inc)
+ ; YOU: Change "my_dune" to the name of your Dune DSL file
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl-show))
+
+(rule
+ (target dune.inc)
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./dune_inc.exe))))
+
+(include dune.inc)
+v}
+
+You will need to change ["my_dune"] and the corresponding name of the module (["My_dune"]) in the above snippet.

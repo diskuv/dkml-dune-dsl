@@ -1,11 +1,11 @@
-{0 Dune DSL}
+{0:dsl Dune DSL}
 
 A mini-language (DSL) for Dune files embedded in OCaml that produces readable, valid Dune include files. The
 mini-language closely matches the structure of a regular Dune file, and because it is embedded in OCaml
 you get OCaml type-safety and the power of your favorite OCaml IDE as you write your Dune files.
 
-The Dune DSL uses a tagless final design, so your Dune DSL can be interpreted in a variety of ways that
-are independent of Dune itself. The standard dkml-dune-dsl-show interpreter allows all of the Dune string
+The Dune DSL uses a tagless final design so your Dune DSL can be interpreted in a variety of ways that
+are independent of Dune itself. The standard {b dkml-dune-dsl-show} interpreter allows all of the Dune string
 values (executable names, rule targets, etc.) to be parameterized from external JSON files. That lets you
 produce many similar executables, libraries or assets using the same Dune logic without repeating yourself
 ({{:https://en.wikipedia.org/wiki/Don%27t_repeat_yourself}DRY}).
@@ -17,11 +17,14 @@ if you want more, this project accepts PRs!
 
 There is at least one sharp edge:
 
-+ If the version of Dune DSL you are using has a bug where it generates a syntactically incorrect Dune file,
-  Dune will stop the build (which is expected). However if you upgrade the Dune DSL which includes
-  a bug fix, Dune still will not be able to generated a corrected Dune file. You will need to truncate the
++ TLDR: {b If your build is not updating, erase everything in your ["dune.inc"] and then rerun Dune twice}.
+  {i What is happening?} If the version of Dune DSL you are using has a bug where it generates a syntactically
+  incorrect Dune file,
+  Dune will stop the build (which is expected). However even if you upgrade to a bugfix version of the
+  Dune DSL, Dune still will not be able to generated a corrected Dune file. You will need to truncate the
   ["dune.inc"] file so that the file is completely empty; then Dune will be able to generate the correct
-  ["dune.inc"]. The situation is a classic chicken-and-egg because we let Dune generate its own include files.
+  ["dune.inc"], and if you run Dune once more then the new ["dune.inc"] logic will run. The situation is
+  a classic chicken-and-egg because we let Dune generate its own include files.
 
 {1 Usage}
 
@@ -56,7 +59,7 @@ An interpreter takes your Dune DSL expression and any command line arguments you
 some activity on it. In particular:
 - the {b dkml-dune-dsl-show} interpreter takes your Dune DSL expression and prints your DSL
   expression as a valid Dune file. The {b dkml-dune-dsl-show} interpreter takes an {i optional} parameters
-  file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example)
+  file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example).
 
 The format of the parameters file for {b dkml-dune-dsl-show} is:
 
@@ -95,58 +98,60 @@ to print your Dune DSL expression {b twice} into the same file:
   ["24"], respectively
 
 Let's complete the parameter set story:
-+ All of those ["{{ ... }}"] expressions are known as {{:http://mustache.github.io/mustache.5.html}Mustache expressions}.
++ All of those ["{{{ ... }}}"] expressions are known as {{:http://mustache.github.io/mustache.5.html}Mustache expressions}.
   Mustache is great at operating on JSON documents, which is exactly what the parameters file is.
   Most but not all of the Mustache expression language can be used; see
   {{:https://github.com/rgrinberg/ocaml-mustache#readme}OCaml Mustache} for the exact specification.
 + Our examples use three braces ["{{{ ... }}}"] rather than two braces ["{{ ... }}"] because the
   three braces is not HTML escaped.  
-+ Any ["{{{ xyz }}}"] parameter where [xyz] is not in your parameter set will be replaced with
-  an empty string.
++ Any ["{{{ xyz }}}"] parameter where [xyz] is not in your parameter set will raise an error:
+  {v
+Fatal error: exception Mustache_types.Missing_variable("xyz")
+v}
 + If you don't supply a parameters file to the {b dkml-dune-dsl-show} interpreter it will print your
-  Dune DSL expression once
+  Dune DSL expression once.
 + Rather than use a single parameter set to print (ex. [{"name": "batman", "age": 39}]), you can use
   the entire parameters file if you use the [pragma once] mode. We'll describe that pragma in the next
-  section, but for now remember you can use [pragma once] and 
+  section, but for now remember that [pragma once] gives you different parameters.
 
 {2 Step Four - Writing}
 
 Write your Dune configuration file in the OCaml DSL language. For what follows, we'll assume it is
 called ["my_dune.ml"]:
 
-[
+{[
 open DkmlDuneDsl
 module Build (I: Dune.SYM) = struct
   open I
   let res = [
-    (pragma "once"
-      (rule [
-        (deps [glob_files "*_data.ml"]);
-        (target "common.ml");
-        (action
-          (run ["something.exe"; "-o"; "%{target}"; "%{deps}"]))]));
-    (pragma "once"
-      (library [
-        (name "common");
-        (modules [ "common" ]);
-      ]));
+    pragma "once"
+      (rule
+          [
+            deps [ glob_files "*_data.ml" ];
+            target "common.ml";
+            action
+              (run
+                [ `S "something.exe"; `S "-o"; `S "%{target}"; `S "%{deps}" ]);
+          ]);
+    pragma "once" (library [ name "common"; modules (set_of [ "common" ]) ]);
     (*
         Being part of a DSL gives us whatever power the interpreter "I" lets us have.
         The dkml-dune-dsl-show interpreter "I" supports Mustache template expressions
         like {{name}} that are consumed from a parameters file.
-
+        .
         We didn't want to repeat the previous stanzas multiple times, so we wrapped
         them in a (pragma "once" ...).
     *)
-    (library [
-      (name "{{name}}");
-      (modules [ "{{name}}" ]);
-      (libraries ["common"]);
-      (preprocess
-        (pps ["ppx_deriving.ord"]))])
+    library
+      [
+        name "{{name}}";
+        modules (set_of [ "{{name}}" ]);
+        libraries [ `S "common" ];
+        preprocess (pps [ `S "ppx_deriving.ord" ]);
+      ];
   ]
 end
-]
+]}
 
 Let's peek ahead for a second. Once we complete all the steps, the Dune DSL tooling should
 give us a valid Dune include file that looks roughly like:
@@ -179,43 +184,52 @@ v}
 The full set of expressions is available in {!DkmlDuneDsl.Dune.SYM}. The [res] result variable
 you write must be a list of type [[`Stanza] repr].
 
-{i If you have any stanza that does not use a parameter ["{{ ... }}"] you should wrap it in
-a {!DkmlDuneDsl.Dune.SYM.pragma}. }
+{i If you have a stanza that does not use a parameter ["{{{ ... }}}"] that is a strong signal
+you should wrap it in a {!DkmlDuneDsl.Dune.SYM.pragma} ["once"]. }
 
 {2 Step Five - Glue}
 
 Write some small Dune glue in your "dune" file to execute your Dune configuration file
 with an interpreter. The only standard interpreter is the {b dkml-dune-dsl-show} interpreter.
-The following snippet goes into the normal "dune" file, _not_ the DSL:
+The following snippet goes into the normal "dune" file, {i not} the DSL:
 
 {v
 (rule
-  (target dune_inc.ml)
-  (action
-    (with-stdout-to %{target}
-      (echo "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    ; YOU: Change "My_dune" to the name of your Dune DSL expression module
+    "module M = My_dune.Build (DkmlDuneDslShow.I)
+     let () = print_string @@ DkmlDuneDslShow.plain_hum M.res"))))
 
 (executable
  (name dune_inc)
+ ; YOU: Change "my_dune" to the name of your Dune DSL file
  (modules dune_inc my_dune)
  (libraries dkml-dune-dsl-show))
 
 (rule
-  (target dune.inc)
-  (mode promote)
-  (action
-    (with-stdout-to %{target}
-      (run ./dune_inc.exe %{dep:dune-parameters.json}))))
+ (target dune.inc)
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./dune_inc.exe))))
 
 (include dune.inc)
 v}
+
+You will need to change ["my_dune"] and the corresponding name of the module (["My_dune"]) in the above snippet.
 
 Then {b write an empty ["dune.inc"] file} in the same directory as your ["dune"] file.
 
 {2 Finished!}
 
 Run [dune build]. Dune will create a ["dune.inc"] in your ["_build/default"] directory (not your source
-directory) containing the information from your DSL expression.
+directory) containing the information from your DSL expression. If you run it again, Dune will run
+all the build instructions in the ["dune.inc"].
 
 It will also tell you when your source directory is out of sync with your DSL expression. If you are
 comfortable with the changes it shows you, run [dune promote] and commit the changes to your source
@@ -231,7 +245,8 @@ in creating their own configuration format using tagless final DSL languages.}
 The author jonahbeckford@ uses DSLs for configuration files because:
 + as a creator of configuration file formats, I don't need to write a lexer or a parser. I instead re-use the OCaml language
   and just lean on OCaml's type-safety to create a rich DSL
-+ as an author of configuration files, I get syntax checking, documentation and perhaps auto-completion with a modern editor _with some setup_
++ as an author of configuration files, I get syntax checking, documentation and perhaps auto-completion with a modern editor
+  {i with some setup}
 + as a user of configuration files, I just need to compile it to see if the syntax is correct
 + at some point in the future, as a user of configuration files I can inspect the compiled bytecode to see if it is "safe"
   and avoids any system calls (all system calls, like printing to the standard output, should be done by the interpreter).
@@ -246,15 +261,15 @@ The sore spot today is the setup required to author a configuration file. You ne
 The setup should ideally be zero. It would be great that anybody could open up a DSL
 configuration file in their favorite editor and start configuring.
 
-To support this, there is a convention I've been following:
+To support this, there is a convention that has been followed:
 
-[
+{[
 open TheCamelCasedNamedOfTheDslOpamPackage
 module NamedFromTheDslSpec (I: NamedFromTheDslSpec.SYM) = struct
   open I
   let res = failwith "TODO: Replace this with your DSL expression here"
 end
-]
+]}
 
 There should be nothing else in a configuration file except OCaml odoc comments.
 Just the [open] statement at the top followed by a [module] definition!
