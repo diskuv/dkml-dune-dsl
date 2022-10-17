@@ -51,6 +51,9 @@
    (>= 0.9.0))
   (mustache
    (>= 3.1.0))
+  ;  mustache.3.1.0 needs menhir.20180528+ for --infer-write-query option
+  (menhir
+   (>= 20180528))
   (sexp_pretty
    (>= v0.14))
   (alcotest
