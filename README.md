@@ -25,7 +25,9 @@ module Build (I : Dune.SYM) = struct
       rule
         [
           target "{{{ name }}}.txt";
-          action (with_stdout_to "%{target}" (echo [ "{{{ age }}}" ]));
+          action
+            (with_stdout_to "%{target}"
+              (echo [ "{{{ age }}}" ]));
         ];
     ]
 end
@@ -43,6 +45,8 @@ that are run over the parameters in a JSON file:
 ```
 
 You can do also do aggregation or, if you are really adventurous, define your own interpreter.
+Even if you don't use parameterization you get things you take for granted with OCaml: type-safety,
+auto-complete and `let` constants.
 
 ## Examples and Testing
 
