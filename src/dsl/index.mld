@@ -49,6 +49,7 @@ add the DSL to it with the [build] flag:
  (depends
   ...
   (dkml-dune-dsl (and (>= 0.1.0) :build))
+  (dkml-dune-dsl-show (and (>= 0.1.0) :build))
  )
 )
 v}
