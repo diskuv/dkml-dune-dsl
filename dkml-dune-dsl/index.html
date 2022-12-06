@@ -4,6 +4,7 @@
  (depends
   ...
   (dkml-dune-dsl (and (&gt;= 0.1.0) :build))
+  (dkml-dune-dsl-show (and (&gt;= 0.1.0) :build))
  )
 )</pre><h3 id="step-three---parameters"><a href="#step-three---parameters" class="anchor"></a>Step Three - Parameters</h3><p>An interpreter takes your Dune DSL expression and any command line arguments you supply to it, and performs some activity on it. In particular:</p><ul><li>the <b>dkml-dune-dsl-show</b> interpreter takes your Dune DSL expression and prints your DSL expression as a valid Dune file. The <b>dkml-dune-dsl-show</b> interpreter takes an <i>optional</i> parameters file which lets you parameterize the printed Dune file (to create multiple but similar executables, for example).</li></ul><p>The format of the parameters file for <b>dkml-dune-dsl-show</b> is:</p><pre>{
   &quot;param-sets&quot;: [ ... we'll describe this soon ... ]
