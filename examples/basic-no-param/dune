@@ -12,12 +12,13 @@
  (libraries dkml-dune-dsl-show))
 
 (rule
- (target dune.inc)
- (mode promote)
+ (alias gendune)
  (action
-  (with-stdout-to
-   %{target}
-   (run ./dune_inc.exe))))
+  (progn
+   (with-stdout-to
+    dune.gen.inc
+    (run ./dune_inc.exe))
+   (diff? dune.inc dune.gen.inc))))
 
 (include dune.inc)
 

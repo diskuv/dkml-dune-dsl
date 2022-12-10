@@ -212,12 +212,13 @@ The following snippet goes into the normal "dune" file, {i not} the DSL:
  (libraries dkml-dune-dsl-show))
 
 (rule
- (target dune.inc)
- (mode promote)
+ (alias gendune)
  (action
-  (with-stdout-to
-   %{target}
-   (run ./dune_inc.exe))))
+  (progn
+   (with-stdout-to
+    dune.gen.inc
+    (run ./dune_inc.exe %{dep:dune-parameters.json}))
+   (diff? dune.inc dune.gen.inc))))
 
 (include dune.inc)
 v}
@@ -228,7 +229,7 @@ Then {b write an empty ["dune.inc"] file} in the same directory as your ["dune"]
 
 {2 Finished!}
 
-Run [dune build]. Dune will create a ["dune.inc"] in your ["_build/default"] directory (not your source
+Run ["dune build '@gendune'"]. Dune will create a ["dune.inc"] in your ["_build/default"] directory (not your source
 directory) containing the information from your DSL expression. If you run it again, Dune will run
 all the build instructions in the ["dune.inc"].
 

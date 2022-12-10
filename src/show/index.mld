@@ -32,12 +32,13 @@ All of that is represented by the following Dune snippet:
  (libraries dkml-dune-dsl-show))
 
 (rule
- (target dune.inc)
- (mode promote)
+ (alias gendune)
  (action
-  (with-stdout-to
-   %{target}
-   (run ./dune_inc.exe))))
+  (progn
+   (with-stdout-to
+    dune.gen.inc
+    (run ./dune_inc.exe %{dep:dune-parameters.json}))
+   (diff? dune.inc dune.gen.inc))))
 
 (include dune.inc)
 v}
