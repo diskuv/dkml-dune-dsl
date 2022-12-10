@@ -154,6 +154,10 @@ module type SYM = sig
   (** [echo [s1; s2; ...]] writes the strings [s1; s2; ...] to the standard output
       separated by a space. *)
 
+  val with_stdin_from : string -> [ `Action ] repr -> [ `Action ] repr
+  (** [with_stdin_from filename action] redirects the input of action [action]
+      from the file named [filename]. *)
+
   val with_stdout_to : string -> [ `Action ] repr -> [ `Action ] repr
   (** [with_stdout_to filename action] redirects the output of action [action]
       to the file named [filename]. *)

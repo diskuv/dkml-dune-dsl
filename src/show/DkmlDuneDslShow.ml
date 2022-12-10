@@ -220,6 +220,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let echo msglst args = _vararg_of_string ~args "echo" msglst
 
+  let with_stdin_from file action args =
+    _list
+      [ _atom "with-stdin-from"; _atom (_parameterize ~args file); action args ]
+
   let with_stdout_to file action args =
     _list
       [ _atom "with-stdout-to"; _atom (_parameterize ~args file); action args ]
