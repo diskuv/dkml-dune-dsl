@@ -146,6 +146,8 @@ module type SYM = sig
 
   val named_dep : name:string -> string -> [ `Dep ] repr
 
+  val alias_dep : string -> [ `Dep ] repr
+
   (** {4 Actions} *)
 
   val echo : string list -> [ `Action ] repr

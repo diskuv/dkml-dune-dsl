@@ -214,6 +214,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
         _atom (":" ^ _parameterize ~args name); _atom (_parameterize ~args dep);
       ]
 
+  let alias_dep alias args = _arg_of_string ~args "alias" alias
+
   (** {4 Actions} *)
 
   let echo msglst args = _vararg_of_string ~args "echo" msglst
