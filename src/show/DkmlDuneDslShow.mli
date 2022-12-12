@@ -16,7 +16,7 @@ v} *)
       (** Zero-based index of [params] in the user-supplied ["param-sets"]. *)
 }
 
-type out = Sexplib.Sexp.With_layout.t option
+type out = Sexplib.Sexp.With_layout.t list
 
 module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out
 (** An interpreter of the Dune DSL whose interpreted result is a s-exp

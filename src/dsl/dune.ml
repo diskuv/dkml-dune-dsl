@@ -36,7 +36,7 @@
 (** The module type for an embedded domain specific language (eDSL) that describes a Dune file. *)
 module type SYM = sig
   type 'a repr
-  (** A type that represents a Dune file. *)
+  (** A type that represents the stanzas and stanza arguments of a Dune file. *)
 
   (** {2 Stanzas} *)
 
@@ -145,8 +145,14 @@ module type SYM = sig
       *)
 
   val named_dep : name:string -> string -> [ `Dep ] repr
+  (** [named_dep ~name file] depends on the [file] and labels the file as [name].
+
+      The [name] label may be used in the rule's {!action}. For example, if
+      [name = "the-cookbook"] then the expression [%{the-cookbook}] can be used
+      in the {!action}. *)
 
   val alias_dep : string -> [ `Dep ] repr
+  (** [alias_dep alias] depends on the alias named [alias]. *)
 
   (** {4 Actions} *)
 

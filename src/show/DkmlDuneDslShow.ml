@@ -6,7 +6,7 @@ type args = {
   params_idx : int;
 }
 
-type out = Sexplib.Sexp.With_layout.t option
+type out = Sexplib.Sexp.With_layout.t list
 
 module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   open Sexplib.Sexp.With_layout
@@ -40,24 +40,18 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let zero_pos = { row = 0; col = 0 }
 
-  let _atom atom = Some (Atom (zero_pos, atom, None))
+  let _atom atom = [ Atom (zero_pos, atom, None) ]
   (* An [Atom] s-exp without comments or pos *)
 
   let _list l =
-    Some
-      (List
-         ( zero_pos,
-           List.filter_map
-             (function None -> None | Some sexp -> Some (Sexp sexp))
-             l,
-           zero_pos ))
+    [ List (zero_pos, List.map (fun i -> Sexp i) (List.flatten l), zero_pos) ]
   (* A [List] s-exp without comments or pos inside the list items *)
 
   let _atomize_sexp = Sexplib.Sexp.to_string
 
   let _string_of_atoms_to_sexp_list s = Sexplib.Sexp.of_string ("(" ^ s ^ ")")
 
-  let _splittable_string_list l args =
+  let _splittable_string_list_and_args_as_repr_list l args =
     List.flatten
     @@ List.map
          (function
@@ -70,6 +64,19 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
                | List l -> List.map (fun sexp -> _atom (_atomize_sexp sexp)) l))
          l
 
+  (* let _splittable_string_list_as_repr_list l =
+     List.flatten
+     @@ List.map
+          (function
+            | `S s -> [ fun args -> _atom (_parameterize ~args s) ]
+            | `Split s -> (
+                let s' = _parameterize ~args s in
+                match _string_of_atoms_to_sexp_list s' with
+                | Atom a -> [ fun args -> _atom (_parameterize ~args a) ]
+                | List [] -> []
+                | List l -> List.map (fun sexp -> _atom (_atomize_sexp sexp)) l))
+          l *)
+
   let _arg_of_string ~args token s =
     _list [ _atom token; _atom (_parameterize ~args s) ]
 
@@ -79,15 +86,18 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       @ Stdlib.List.map (fun s -> _atom (_parameterize ~args s)) sl)
 
   let _vararg_of_splittable_string ?none_when_empty ~args token sl =
-    match (none_when_empty, _splittable_string_list sl args) with
-    | Some (), l when List.filter_map Fun.id l |> List.length = 0 -> None
+    match
+      (none_when_empty, _splittable_string_list_and_args_as_repr_list sl args)
+    with
+    | Some (), l when List.map Fun.id (List.flatten l) |> List.length = 0 -> []
     | _, strings -> _list ([ _atom token ] @ strings)
 
   let _spread args = List.map (fun child -> child args)
 
-  let _ordset_atom_list l =
-    List
-      (zero_pos, List.map (fun i -> Sexp (Atom (zero_pos, i, None))) l, zero_pos)
+  let _ordset_atom_list ?p1 ?p2 l =
+    let p1 = Option.value ~default:zero_pos p1 in
+    let p2 = Option.value ~default:zero_pos p2 in
+    List (p1, List.map (fun i -> Sexp (Atom (p1, i, None))) l, p2)
 
   (** An empty set. For now the simplest expression is (:standard \ :standard)  *)
   let _empty_set =
@@ -96,6 +106,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       Sexp (Atom (zero_pos, "\\", None));
       Sexp (Atom (zero_pos, ":standard", None));
     ]
+
+  let _pp_orditem fmt v =
+    let config = Sexp_pretty.Config.create ~color:false () in
+    Fmt.pf fmt "%s" (Sexp_pretty.Sexp_with_layout.pretty_string config (Sexp v))
 
   (** Before we convert an ordset into a ['a repr = t_or_comment list] we
       need to optimize it so it avoids the following:
@@ -116,22 +130,24 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       + all lists with an atom as the first argument are prepended with the empty set
         expression (:standard \ :standard)
   *)
-  let _arg_of_ordset token (ordset : out) : t option =
+  let _arg_of_ordset token (ordset : out) : t list =
     (* Post order traversal so leaves are visited first. That way [((((a))))] can
        be promoted into [a]. *)
-    let rec promote_one_element_lists (ordset' : out) : out =
+    let rec promote_one_element_lists (ordset' : out) : t option =
       match ordset' with
-      | Some (Atom _) as a -> a
-      | None -> None
-      | Some (List (p1, l, p2)) -> (
+      | [ (Atom _ as a) ] -> Some a
+      | [] -> None
+      | [ List (p1, l, p2) ] -> (
           (* visit children first *)
           let l' =
             List.map
               (function
                 | Comment c -> Comment c
                 | Sexp sexp -> (
-                    match promote_one_element_lists (Some sexp) with
-                    | None -> failwith ""
+                    match promote_one_element_lists [ sexp ] with
+                    | None ->
+                        failwith
+                          "Illegal state. promote_one_element_lists was None"
                     | Some sexp' -> Sexp sexp'))
               l
           in
@@ -151,13 +167,17 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
               in
               Some (List (p1, isolated_empty_set :: all_args, p1))
           | l'' -> Some (List (p1, l'', p2)))
+      | _ ->
+          Fmt.failwith "Illegal argument. The ordset was: %a"
+            (Fmt.list _pp_orditem) ordset
     in
     (* promote, and then restructure so the result is a ['a repr] *)
     match promote_one_element_lists ordset with
-    | Some (Atom (_, atom, _)) -> Some (_ordset_atom_list [ token; atom ])
+    | Some (Atom (p1, atom, _)) ->
+        [ _ordset_atom_list ~p1 ~p2:p1 [ token; atom ] ]
     | Some (List (p1, l, p2)) ->
-        Some (List (p1, Sexp (Atom (zero_pos, token, None)) :: l, p2))
-    | None -> Some (_ordset_atom_list [ token ])
+        [ List (p1, Sexp (Atom (p1, token, None)) :: l, p2) ]
+    | None -> [ _ordset_atom_list [ token ] ]
 
   (** {2 Stanzas} *)
 
@@ -178,7 +198,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
         stanza { args with params = args.entire_params_file }
     | "once", _idx ->
         (* exclude the stanza if we are repeating more than once *)
-        None
+        []
     | _ -> stanza args
 
   (** {3 Rules} *)
@@ -266,7 +286,9 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   let name s args = _arg_of_string ~args "name" s
 
   let libraries l args =
-    _list ([ _atom "libraries" ] @ _splittable_string_list l args)
+    _list
+      ([ _atom "libraries" ]
+      @ _splittable_string_list_and_args_as_repr_list l args)
 
   let show_compilation_mode = function
     | Byte -> "byte"
@@ -311,9 +333,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let preprocess spec args =
     (* Dune does not accept empty-arg (preprocess) so we remove it *)
-    match spec args with
-    | None -> None
-    | Some v -> _list [ _atom "preprocess"; Some v ]
+    match spec args with [] -> [] | v -> _list [ _atom "preprocess"; v ]
 
   (** {4 Preprocessing} *)
 
@@ -335,39 +355,54 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let set_of l args : out =
     match l with
-    | [] -> None
+    | [] -> []
     | l ->
         let l' = List.map (fun s -> _parameterize ~args s) l in
-        Some (_ordset_atom_list l')
+        [ _ordset_atom_list l' ]
 
-  let standard _args : out = Some (Atom (zero_pos, ":standard", None))
+  let standard _args : out = [ Atom (zero_pos, ":standard", None) ]
 
   let split s args : out =
     (* Split AFTER evaluating the parameters *)
     let posteval = _parameterize ~args s in
     (* Okay. Now is good to split *)
     match _string_of_atoms_to_sexp_list posteval with
-    | Atom s -> Some (Atom (zero_pos, s, None))
-    | List [] -> None
+    | Atom s -> [ Atom (zero_pos, s, None) ]
+    | List [] -> []
     | List l ->
         let l' = List.map _atomize_sexp l in
         set_of l' args
 
   let difference a_set b_set args : out =
     match (a_set args, b_set args) with
-    | None, _ -> (* A - B = {} when A = {} *) None
-    | Some a, None -> (* A - B = A when B = {} *) Some a
-    | Some a, Some b ->
-        Some
-          (List
-             ( zero_pos,
-               [ Sexp a; Sexp (Atom (zero_pos, "\\", None)); Sexp b ],
-               zero_pos ))
+    | [], _ -> (* A - B = {} when A = {} *) []
+    | [ a ], [] -> (* A - B = A when B = {} *) [ a ]
+    | [ a ], [ b ] ->
+        [
+          List
+            ( zero_pos,
+              [ Sexp a; Sexp (Atom (zero_pos, "\\", None)); Sexp b ],
+              zero_pos );
+        ]
+    | [ _ ], _ ->
+        failwith "Cannot take (difference a b) when 'a' has more than one value"
+    | _, [ _ ] ->
+        failwith "Cannot take (difference a b) when 'b' has more than one value"
+    | _, _ ->
+        failwith
+          "Cannot take (difference a b) when both 'a' and 'b' have more than \
+           one value. Both 'a' and 'b' must have zero or one value"
 
   let union (sets : [ `OrderedSet ] repr list) args : out =
-    match List.filter_map (fun child -> child args) sets with
-    | [] -> None
-    | l -> Some (List (zero_pos, List.map (fun sexp -> Sexp sexp) l, zero_pos))
+    match List.map (fun child -> child args) sets with
+    | [] -> []
+    | l ->
+        [
+          List
+            ( zero_pos,
+              List.map (fun sexp -> Sexp sexp) (List.flatten l),
+              zero_pos );
+        ]
 
   (** {3:Libraries Libraries} *)
 
@@ -522,12 +557,11 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
             Queue.add ps_comment pending_prints);
         (* Print Dune stanzas *)
         let f_stanza sexpf =
-          match
+          let sexps =
             sexpf
               { entire_params_file; params = validated_param_set; params_idx }
-          with
-          | None -> ()
-          | Some sexp -> Queue.add (Sexp sexp) pending_prints
+          in
+          List.iter (fun sexp -> Queue.add (Sexp sexp) pending_prints) sexps
         in
         List.iter f_stanza stanza_sexpf_lst;
         (* Dump everything to formatter *)
