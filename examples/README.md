@@ -10,6 +10,7 @@ using the boilerplate in ["dune"].
 | Example                 | Description                                                   |
 | ----------------------- | ------------------------------------------------------------- |
 | [basic-no-param]        | The simplest example                                          |
+| [basic-deps]            | Adds dependencies to [basic-no-param]                         |
 | [executable]            | Create an executable                                          |
 | [basic-param-strings]   | Adds two parameters to [basic-no-param]                       |
 | [ordered-set]           | An example using Ordered Sets                                 |
@@ -19,6 +20,7 @@ using the boilerplate in ["dune"].
 | [test-support]          | *This is not an example. It is unit test code*                |
 
 [basic-no-param]: ./basic-no-param
+[basic-deps]: ./basic-deps
 [basic-param-strings]: ./basic-param-strings
 [executable]: ./executable
 [ordered-set]: ./ordered-set

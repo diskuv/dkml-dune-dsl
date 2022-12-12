@@ -154,6 +154,12 @@ module type SYM = sig
   val alias_dep : string -> [ `Dep ] repr
   (** [alias_dep alias] depends on the alias named [alias]. *)
 
+  val file_dep : string -> [ `Dep ] repr
+  (** [file_dep file] depends on the file named [file]. *)
+
+  val file_deps : [< `S of string | `Split of string ] list -> [ `Dep ] repr
+  (** [file_deps [`S file1; `S file2; ...]] depends on the list of files [file1; file2; ...]. *)
+
   (** {4 Actions} *)
 
   val echo : string list -> [ `Action ] repr

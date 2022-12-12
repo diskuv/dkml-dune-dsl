@@ -236,6 +236,11 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let alias_dep alias args = _arg_of_string ~args "alias" alias
 
+  let file_dep file args = _atom (_parameterize ~args file)
+
+  let file_deps l args =
+    List.flatten (_splittable_string_list_and_args_as_repr_list l args)
+
   (** {4 Actions} *)
 
   let echo msglst args = _vararg_of_string ~args "echo" msglst

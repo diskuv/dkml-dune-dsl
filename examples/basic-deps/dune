@@ -1,0 +1,33 @@
+(rule
+ (target dune_inc.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo
+    "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+
+(executable
+ (name dune_inc)
+ (modules dune_inc my_dune)
+ (libraries dkml-dune-dsl-show))
+
+(rule
+ (alias gendune)
+ (action
+  (progn
+   (with-stdout-to
+    dune.gen.inc
+    (run ./dune_inc.exe))
+   (diff? dune.inc dune.gen.inc))))
+
+(include dune.inc)
+
+; ------ TESTS -----
+
+(rule
+ (alias runtest)
+ (action
+  (run
+   ../test-support/assert_file_contains.exe
+   %{dep:somefile.txt}
+   "hello to all the fish and let () = ()")))
