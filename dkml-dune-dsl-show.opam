@@ -6,7 +6,7 @@ synopsis:
 maintainer: ["opensource+diskuv-ocaml@support.diskuv.com"]
 authors: ["Diskuv, Inc. <opensource+diskuv-ocaml@support.diskuv.com>"]
 license: "Apache-2.0"
-homepage: "https://github.com/diskuv/dkml-dune-dsl#readme"
+homepage: "https://github.com/diskuv/dkml-dune-dsl"
 doc: "https://diskuv.github.io/dkml-dune-dsl/dkml-dune-dsl-show/index.html"
 bug-reports: "https://github.com/diskuv/dkml-dune-dsl/issues"
 depends: [

@@ -15,7 +15,7 @@
 
 (maintainers "opensource+diskuv-ocaml@support.diskuv.com")
 
-(homepage "https://github.com/diskuv/dkml-dune-dsl#readme")
+(homepage "https://github.com/diskuv/dkml-dune-dsl")
 
 (bug_reports "https://github.com/diskuv/dkml-dune-dsl/issues")
 
