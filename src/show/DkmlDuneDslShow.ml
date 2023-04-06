@@ -12,9 +12,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   open Sexplib.Sexp.With_layout
 
   type 'a repr = args -> out
-
   type compilation_mode = Byte | Native | Best
-
   type binary_kind = C | Exe | Object | Shared_object | Js | Plugin
 
   (** {2 Utilities} *)
@@ -39,7 +37,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     Mustache.render template args.params
 
   let zero_pos = { row = 0; col = 0 }
-
   let _atom atom = [ Atom (zero_pos, atom, None) ]
   (* An [Atom] s-exp without comments or pos *)
 
@@ -48,7 +45,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (* A [List] s-exp without comments or pos inside the list items *)
 
   let _atomize_sexp = Sexplib.Sexp.to_string
-
   let _string_of_atoms_to_sexp_list s = Sexplib.Sexp.of_string ("(" ^ s ^ ")")
 
   let _splittable_string_list_and_args_as_repr_list l args =
@@ -107,7 +103,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       Sexp (Atom (zero_pos, ":standard", None));
     ]
 
-  let _pp_orditem fmt v =
+  let _pp_item fmt v =
     let config = Sexp_pretty.Config.create ~color:false () in
     Fmt.pf fmt "%s" (Sexp_pretty.Sexp_with_layout.pretty_string config (Sexp v))
 
@@ -130,49 +126,69 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       + all lists with an atom as the first argument are prepended with the empty set
         expression (:standard \ :standard)
   *)
+
+  (** Post order traversal so leaves are visited first. That way [((((a))))] can
+        be promoted into [a]. *)
+  let rec promote_one_element_lists ~name ~inject_empty_set (orig_ordset : out)
+      (current_ordset : out) : t option =
+    match current_ordset with
+    | [ (Atom _ as a) ] -> Some a
+    | [] -> None
+    | [ List (p1, l, p2) ] -> (
+        (* visit children first *)
+        let l' =
+          List.map
+            (function
+              | Comment c -> Comment c
+              | Sexp sexp -> (
+                  match
+                    promote_one_element_lists ~name ~inject_empty_set
+                      orig_ordset [ sexp ]
+                  with
+                  | None ->
+                      failwith
+                        "Illegal state. promote_one_element_lists was None"
+                  | Some sexp' -> Sexp sexp'))
+            l
+        in
+        (* post-order, simplify any one argument lists *)
+        match l' with
+        | [] -> None
+        | [ Sexp one_arg ] -> Some one_arg
+        (* nit: [ Comment _; Sexp _ ], [ Comment _; Comment _; Sexp _ ], etc. are not collapsed
+           with this (match l') code. Need to visit all the elements of l', but we can ignore
+           since we don't put comments in ordered sets. *)
+        | Sexp (Atom (_, _, _)) :: _tl as all_args when inject_empty_set ->
+            (* Add the empty set to lists with an atomic first argument . It must be
+               isolated with enclosing parenthese so the different operator "\" does not
+               affect the remaining arguments "*)
+            let isolated_empty_set =
+              Sexp (List (zero_pos, _empty_set, zero_pos))
+            in
+            Some (List (p1, isolated_empty_set :: all_args, p1))
+        | l'' -> Some (List (p1, l'', p2)))
+    | _ ->
+        Fmt.failwith "Illegal argument. The %s was: %a" name (Fmt.list _pp_item)
+          orig_ordset
+
   let _arg_of_ordset token (ordset : out) : t list =
-    (* Post order traversal so leaves are visited first. That way [((((a))))] can
-       be promoted into [a]. *)
-    let rec promote_one_element_lists (ordset' : out) : t option =
-      match ordset' with
-      | [ (Atom _ as a) ] -> Some a
-      | [] -> None
-      | [ List (p1, l, p2) ] -> (
-          (* visit children first *)
-          let l' =
-            List.map
-              (function
-                | Comment c -> Comment c
-                | Sexp sexp -> (
-                    match promote_one_element_lists [ sexp ] with
-                    | None ->
-                        failwith
-                          "Illegal state. promote_one_element_lists was None"
-                    | Some sexp' -> Sexp sexp'))
-              l
-          in
-          (* post-order, simplify any one argument lists *)
-          match l' with
-          | [] -> None
-          | [ Sexp one_arg ] -> Some one_arg
-          (* nit: [ Comment _; Sexp _ ], [ Comment _; Comment _; Sexp _ ], etc. are not collapsed
-             with this (match l') code. Need to visit all the elements of l', but we can ignore
-             since we don't put comments in ordered sets. *)
-          | Sexp (Atom (_, _, _)) :: _tl as all_args ->
-              (* Add the empty set to lists with an atomic first argument . It must be
-                 isolated with enclosing parenthese so the different operator "\" does not
-                 affect the remaining arguments "*)
-              let isolated_empty_set =
-                Sexp (List (zero_pos, _empty_set, zero_pos))
-              in
-              Some (List (p1, isolated_empty_set :: all_args, p1))
-          | l'' -> Some (List (p1, l'', p2)))
-      | _ ->
-          Fmt.failwith "Illegal argument. The ordset was: %a"
-            (Fmt.list _pp_orditem) ordset
-    in
     (* promote, and then restructure so the result is a ['a repr] *)
-    match promote_one_element_lists ordset with
+    match
+      promote_one_element_lists ~name:"ordset" ~inject_empty_set:true ordset
+        ordset
+    with
+    | Some (Atom (p1, atom, _)) ->
+        [ _ordset_atom_list ~p1 ~p2:p1 [ token; atom ] ]
+    | Some (List (p1, l, p2)) ->
+        [ List (p1, Sexp (Atom (p1, token, None)) :: l, p2) ]
+    | None -> [ _ordset_atom_list [ token ] ]
+
+  let _arg_of_boolean_lang token (ordset : out) : t list =
+    (* promote, and then restructure so the result is a ['a repr] *)
+    match
+      promote_one_element_lists ~name:"boolean language" ~inject_empty_set:false
+        ordset ordset
+    with
     | Some (Atom (p1, atom, _)) ->
         [ _ordset_atom_list ~p1 ~p2:p1 [ token; atom ] ]
     | Some (List (p1, l, p2)) ->
@@ -182,11 +198,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** {2 Stanzas} *)
 
   let rule l args = _list ([ _atom "rule" ] @ _spread args l)
-
   let executable l args = _list ([ _atom "executable" ] @ _spread args l)
-
   let library l args = _list ([ _atom "library" ] @ _spread args l)
-
   let install l args = _list ([ _atom "install" ] @ _spread args l)
 
   let pragma statement stanza args =
@@ -204,14 +217,14 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** {3 Rules} *)
 
   let alias s args = _arg_of_string ~args "alias" s
-
   let targets l args = _vararg_of_splittable_string ~args "targets" l
-
   let target s args = _arg_of_string ~args "target" s
-
   let deps l args = _list ([ _atom "deps" ] @ _spread args l)
-
   let action a args = _list [ _atom "action"; a args ]
+
+  let rule_enabled_if (boolean_lang : [ `BooleanLanguage ] repr) args =
+    let final_boolean_lang = boolean_lang args in
+    _arg_of_boolean_lang "enabled_if" final_boolean_lang
 
   type mode = Standard | Fallback | Promote
 
@@ -224,6 +237,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     in
     _list ([ _atom "mode" ] @ mode_args)
 
+  (** {4 Boolean Language} *)
+
   (** {4 Dependencies} *)
 
   let glob_files globstring args = _arg_of_string ~args "glob_files" globstring
@@ -235,7 +250,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       ]
 
   let alias_dep alias args = _arg_of_string ~args "alias" alias
-
   let file_dep file args = _atom (_parameterize ~args file)
 
   let file_deps l args =
@@ -254,9 +268,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       [ _atom "with-stdout-to"; _atom (_parameterize ~args file); action args ]
 
   let progn l args = _list ([ _atom "progn" ] @ _spread args l)
-
   let copy ~src ~dest args = _vararg_of_string ~args "copy" [ src; dest ]
-
   let run l args = _vararg_of_splittable_string ~args "run" l
 
   let diff ~actual ~expected args =
@@ -287,7 +299,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** {3 Executables and Libraries} *)
 
   let public_name s args = _arg_of_string ~args "public_name" s
-
   let name s args = _arg_of_string ~args "name" s
 
   let libraries l args =
@@ -409,6 +420,40 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
               zero_pos );
         ]
 
+  let template s args = [ Atom (zero_pos, _parameterize ~args s, None) ]
+
+  let all (booleans : [ `BooleanLanguage ] repr list) args : out =
+    match List.map (fun child -> child args) booleans with
+    | [] -> failwith "(all) must contain at least one boolean expression"
+    | l ->
+        let l' = List.flatten l in
+        let l' = Atom (zero_pos, "and", None) :: l' in
+        [ List (zero_pos, List.map (fun sexp -> Sexp sexp) l', zero_pos) ]
+
+  let any (booleans : [ `BooleanLanguage ] repr list) args : out =
+    match List.map (fun child -> child args) booleans with
+    | [] -> failwith "(or) must contain at least one boolean expression"
+    | l ->
+        let l' = List.flatten l in
+        let l' = Atom (zero_pos, "or", None) :: l' in
+        [ List (zero_pos, List.map (fun sexp -> Sexp sexp) l', zero_pos) ]
+
+  let not (a : [ `BooleanLanguage ] repr) args : out =
+    let inner = [ Atom (zero_pos, "not", None) ] @ a args in
+    [ List (zero_pos, List.map (fun sexp -> Sexp sexp) inner, zero_pos) ]
+
+  let binary_op op (a : [ `BooleanLanguage ] repr)
+      (b : [ `BooleanLanguage ] repr) args : out =
+    let inner = [ Atom (zero_pos, op, None) ] @ a args @ b args in
+    [ List (zero_pos, List.map (fun sexp -> Sexp sexp) inner, zero_pos) ]
+
+  let eq = binary_op "="
+  let ne = binary_op "<>"
+  let ge = binary_op ">="
+  let le = binary_op "<="
+  let gt = binary_op ">"
+  let lt = binary_op "<"
+
   (** {3:Libraries Libraries} *)
 
   let virtual_modules (ordset : [ `OrderedSet ] repr) args =
@@ -425,7 +470,6 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** {3 Install} *)
 
   let section s args = _arg_of_string ~args "section" s
-
   let install_files l args = _list ([ _atom "files" ] @ _spread args l)
 
   let destination_file ~filename ~destination args =
@@ -440,7 +484,6 @@ end
 (* Pretty printers *)
 
 let plain_hum_config = Sexp_pretty.Config.create ~color:false ()
-
 let pretty = Sexp_pretty.Config.default
 
 (* Mustache *)

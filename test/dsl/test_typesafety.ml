@@ -14,5 +14,6 @@ module Build (I : Dune.SYM) = struct
           modes [ `Byte; `Mode (Best, Exe) ];
         ];
       library [ name "example2"; virtual_modules (set_of [ "example2" ]) ];
+      rule [ rule_enabled_if (template "true") ];
     ]
 end

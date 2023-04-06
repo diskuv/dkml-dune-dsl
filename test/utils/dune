@@ -1,0 +1,3 @@
+(library
+ (name testutils)
+ (libraries dkml-dune-dsl-show alcotest))

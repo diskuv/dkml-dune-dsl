@@ -1,3 +1,8 @@
+## 0.1.2
+
+* Add Boolean Language
+* Add `enabled_if` for `(rule)`
+
 ## 0.1.1
 
 * Add expression for `(alias _name_)` in `(deps)`.

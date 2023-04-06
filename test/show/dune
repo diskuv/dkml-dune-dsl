@@ -1,4 +1,4 @@
 (tests
- (names test_orderedset)
+ (names test_orderedset test_booleanlang)
  (package dkml-dune-dsl-show)
- (libraries dkml-dune-dsl-show alcotest fmt))
+ (libraries dkml-dune-dsl-show alcotest fmt testutils))
