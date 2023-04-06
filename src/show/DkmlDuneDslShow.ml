@@ -192,7 +192,12 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     | Some (Atom (p1, atom, _)) ->
         [ _ordset_atom_list ~p1 ~p2:p1 [ token; atom ] ]
     | Some (List (p1, l, p2)) ->
-        [ List (p1, Sexp (Atom (p1, token, None)) :: l, p2) ]
+        [
+          List
+            ( p1,
+              Sexp (Atom (p1, token, None)) :: [ Sexp (List (p1, l, p2)) ],
+              p2 );
+        ]
     | None -> [ _ordset_atom_list [ token ] ]
 
   (** {2 Stanzas} *)
