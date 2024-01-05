@@ -1,0 +1,33 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - 'main'
+
+permissions: read-all
+
+jobs:
+  test:
+    name: Test
+
+    permissions:
+      contents: read
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: OCaml 4.13.x
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.13.x
+          dune-cache: false # true does not publish pages consistently
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Run tests
+        run: opam exec -- dune runtest
