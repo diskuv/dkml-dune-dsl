@@ -25,7 +25,24 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out
     Use {!plain_hum} or {!pretty} to show the Dune file. *)
 
 val plain_hum : (args -> out) list -> string
-(** Show the DSL expression as a plain, human-readable, valid Dune file *)
+(** Show the DSL expression as a plain, human-readable, valid Dune file.
+
+    The command line arguments [Sys.argv] are parsed and the first
+    argument, if any, is used as the JSON parameters file. *)
 
 val pretty : (args -> out) list -> string
-(** Show the DSL expression as a Dune file with colors if your terminal supports it; do not use for writing Dune files! *)
+(** Show the DSL expression as a Dune file with colors if your terminal supports
+    it; do not use for writing Dune files! *)
+
+val no_parameters_json : Mustache.Json.t
+(** The contents of a JSON parameters file that has no parameters.
+    
+    Equivalent to a single-item array (1 item) of an empty object. *)
+
+val plain_hum_with_params : Mustache.Json.t -> (args -> out) list -> string
+(** [plain_hum_with_params params res] show the DSL expression [res] as a
+    plain, human-readable, valid Dune file using the JSON parameters [params].
+
+    [params] should have the same structure as a JSON parameters file.
+
+    No command line arguments [Sys.argv] are parsed. *)

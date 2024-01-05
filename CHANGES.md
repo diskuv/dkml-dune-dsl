@@ -1,3 +1,7 @@
+## 0.1.3
+
+* Allow DkmlDuneDslShow to be used programmatically
+
 ## 0.1.2
 
 * Add Boolean Language

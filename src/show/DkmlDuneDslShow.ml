@@ -493,94 +493,98 @@ let pretty = Sexp_pretty.Config.default
 
 (* Mustache *)
 
-type params_avail = No_parameters | Has_parameters
+type params_content = No_parameters | Has_parameters of Mustache.Json.t
 
-(** Equivalent to a single-item array (1 item) of an empty object (no parameters) *)
-let minimal_params_file = "{ \"param-sets\": [ {} ] }"
-
-let json_from_argv () : params_avail * Mustache.Json.t =
+let json_from_argv () : params_content =
   match Sys.argv with
   | [||] -> failwith "Sys.argv was empty!"
-  | [| _ |] -> (No_parameters, Ezjsonm.from_string minimal_params_file)
+  | [| _ |] -> No_parameters
   | [| _; filename |] ->
       let ic = open_in filename in
       let json = Ezjsonm.from_channel ic in
       close_in ic;
-      (Has_parameters, json)
+      Has_parameters json
   | _ -> failwith "usage: show.exe [MUSTACHE_JSON_PARAMETERS]"
 
 (* CLI entry points *)
 
 let known_toplevel_keys = [ "param-sets" ]
+let no_parameters_json = `O [ ("param-sets", `A [ `O [] ]) ]
+let no_parameters_text = Ezjsonm.to_string no_parameters_json
 
-let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
-  (* Get the JSON *)
-  let params_avail, entire_params_file = json_from_argv () in
+(** Validate parameters file is an object, with keys having underscores or
+    being part of the known toplevel keys *)
+let validate_params_file_is_json_object = function
+  | `O l as entire_params_file ->
+      List.iter
+        (fun (key, _value) ->
+          if String.is_prefix ~affix:"_" key then ()
+          else if List.mem key known_toplevel_keys then ()
+          else
+            let msg =
+              Format.asprintf
+                "@[The JSON parameter file has a toplevel key @['%s'@]@ that \
+                 is not part of the known keys@ (@[%a@])@ nor does it start \
+                 with an underscore.@ Start your key with an underscore if you \
+                 want your own custom key.@ @[Example: @['_%s'@]@].@ The \
+                 parameter file was:@ @[%s@]@]"
+                key
+                (Format.pp_print_list
+                   ~pp_sep:(fun fmt _v -> Format.pp_print_string fmt ", ")
+                   Format.pp_print_string)
+                known_toplevel_keys key
+                (Ezjsonm.to_string entire_params_file)
+            in
+            prerr_endline @@ "FATAL: " ^ msg;
+            failwith msg)
+        l
+  | entire_params_file ->
+      let msg =
+        Printf.sprintf
+          "The JSON parameter file is not a JSON object. A minimal JSON \
+           parameter file is: %s. Instead the parameter file was: %s"
+          no_parameters_text
+          (Ezjsonm.to_string entire_params_file)
+      in
+      prerr_endline @@ "FATAL: " ^ msg;
+      failwith msg
+
+(** Validate parameters file has a ["param-sets"] array, and return it *)
+let parse_param_sets params_content =
+  match params_content with
+  | No_parameters -> []
+  | Has_parameters entire_params_file -> (
+      validate_params_file_is_json_object entire_params_file;
+      match
+        Ezjsonm.find_opt (Ezjsonm.value entire_params_file) [ "param-sets" ]
+      with
+      | Some (`A param_sets) -> param_sets
+      | Some value ->
+          let msg =
+            Printf.sprintf
+              "The JSON parameter file's \"param-sets\" field is not an array. \
+               A minimal JSON parameter file is: %s. Instead the field was: %s"
+              no_parameters_text
+              (Ezjsonm.value_to_string value)
+          in
+          prerr_endline @@ "FATAL: " ^ msg;
+          failwith msg
+      | None ->
+          let msg =
+            Printf.sprintf
+              "The JSON parameter file's \"param-sets\" field was not present. \
+               A minimal JSON parameter file is: %s. Instead the parameter \
+               file was: %s"
+              no_parameters_text
+              (Ezjsonm.to_string entire_params_file)
+          in
+          prerr_endline @@ "FATAL: " ^ msg;
+          failwith msg)
+
+let render params_content sexp_pretty_config
+    (stanza_sexpf_lst : (args -> out) list) =
   (* Parse JSON *)
-  let param_sets =
-    (* Validate it is an object, with keys having underscores or being part of the known
-       toplevel keys *)
-    (match entire_params_file with
-    | `O l ->
-        List.iter
-          (fun (key, _value) ->
-            if String.is_prefix ~affix:"_" key then ()
-            else if List.mem key known_toplevel_keys then ()
-            else
-              let msg =
-                Format.asprintf
-                  "@[The JSON parameter file has a toplevel key @['%s'@]@ that \
-                   is not part of the known keys@ (@[%a@])@ nor does it start \
-                   with an underscore.@ Start your key with an underscore if \
-                   you want your own custom key.@ @[Example: @['_%s'@]@].@ The \
-                   parameter file was:@ @[%s@]@]"
-                  key
-                  (Format.pp_print_list
-                     ~pp_sep:(fun fmt _v -> Format.pp_print_string fmt ", ")
-                     Format.pp_print_string)
-                  known_toplevel_keys key
-                  (Ezjsonm.to_string entire_params_file)
-              in
-              prerr_endline @@ "FATAL: " ^ msg;
-              failwith msg)
-          l
-    | _ ->
-        let msg =
-          Printf.sprintf
-            "The JSON parameter file is not a JSON object. A minimal JSON \
-             parameter file is: %s. Instead the parameter file was: %s"
-            minimal_params_file
-            (Ezjsonm.to_string entire_params_file)
-        in
-        prerr_endline @@ "FATAL: " ^ msg;
-        failwith msg);
-    (* Validate it has a param-sets array, and return it *)
-    match
-      Ezjsonm.find_opt (Ezjsonm.value entire_params_file) [ "param-sets" ]
-    with
-    | Some (`A param_sets) -> param_sets
-    | Some value ->
-        let msg =
-          Printf.sprintf
-            "The JSON parameter file's \"param-sets\" field is not an array. A \
-             minimal JSON parameter file is: %s. Instead the field was: %s"
-            minimal_params_file
-            (Ezjsonm.value_to_string value)
-        in
-        prerr_endline @@ "FATAL: " ^ msg;
-        failwith msg
-    | None ->
-        let msg =
-          Printf.sprintf
-            "The JSON parameter file's \"param-sets\" field was not present. A \
-             minimal JSON parameter file is: %s. Instead the parameter file \
-             was: %s"
-            minimal_params_file
-            (Ezjsonm.to_string entire_params_file)
-        in
-        prerr_endline @@ "FATAL: " ^ msg;
-        failwith msg
-  in
+  let param_sets = parse_param_sets params_content in
   let buf = Buffer.create 1024 in
   let fmt = Format.formatter_of_buffer buf in
   let g_param_set params_idx param_set =
@@ -590,24 +594,27 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
         let open Sexplib.Sexp.With_layout in
         let pending_prints = Queue.create () in
         (* Print comment with the Mustache JSON parameters *)
-        (match params_avail with
-        | No_parameters -> ()
-        | Has_parameters ->
-            (* Describe the parameter set *)
-            let ps_description = Ezjsonm.value_to_string param_set in
-            let ps_description_l =
-              String.cuts ~sep:"\n" ps_description
-              |> List.map (fun s -> ";   " ^ s)
-            in
-            let ps_description_commented =
-              Printf.sprintf "; Parameter Set =\n%s"
-                (String.concat ~sep:"\n" ps_description_l)
-            in
-            let ps_comment =
-              Comment
-                (Plain_comment ({ row = 0; col = 0 }, ps_description_commented))
-            in
-            Queue.add ps_comment pending_prints);
+        let entire_params_file =
+          match params_content with
+          | No_parameters -> no_parameters_json
+          | Has_parameters entire_params_file ->
+              (* Describe the parameter set *)
+              let ps_description = Ezjsonm.value_to_string param_set in
+              let ps_description_l =
+                String.cuts ~sep:"\n" ps_description
+                |> List.map (fun s -> ";   " ^ s)
+              in
+              let ps_description_commented =
+                Printf.sprintf "; Parameter Set =\n%s"
+                  (String.concat ~sep:"\n" ps_description_l)
+              in
+              let ps_comment =
+                Comment
+                  (Plain_comment ({ row = 0; col = 0 }, ps_description_commented))
+              in
+              Queue.add ps_comment pending_prints;
+              entire_params_file
+        in
         (* Print Dune stanzas *)
         let f_stanza sexpf =
           let sexps =
@@ -636,7 +643,10 @@ let do_cli sexp_pretty_config (stanza_sexpf_lst : (args -> out) list) =
   Buffer.to_bytes buf |> Bytes.to_string
 
 let plain_hum (stanza_sexpf_lst : (args -> out) list) =
-  do_cli plain_hum_config stanza_sexpf_lst
+  render (json_from_argv ()) plain_hum_config stanza_sexpf_lst
 
 let pretty (stanza_sexpf_lst : (args -> out) list) =
-  do_cli pretty stanza_sexpf_lst
+  render (json_from_argv ()) pretty stanza_sexpf_lst
+
+let plain_hum_with_params params (stanza_sexpf_lst : (args -> out) list) =
+  render (Has_parameters params) plain_hum_config stanza_sexpf_lst

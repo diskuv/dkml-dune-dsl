@@ -2,7 +2,7 @@
 
 (name dkml-dune-dsl)
 
-(version 0.1.2)
+(version 0.1.3)
 
 (generate_opam_files true)
 
@@ -11,9 +11,9 @@
 
 (license Apache-2.0)
 
-(authors "Diskuv, Inc. <opensource+diskuv-ocaml@support.diskuv.com>")
+(authors "Diskuv, Inc. <opensource+dkml@support.diskuv.com>")
 
-(maintainers "opensource+diskuv-ocaml@support.diskuv.com")
+(maintainers "opensource+dkml@support.diskuv.com")
 
 (homepage "https://github.com/diskuv/dkml-dune-dsl")
 
