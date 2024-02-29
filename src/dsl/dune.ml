@@ -248,6 +248,12 @@ module type SYM = sig
   val copy : src:string -> dest:string -> [ `Action ] repr
   (** [copy ~src ~dest] copies the [src] file to [dest] *)
 
+  val copy_with_source_directive : src:string -> dest:string -> [ `Action ] repr
+  (** [copy_with_source_directive ~src ~dest] copies the [src] file to [dest] with
+      a header line `# 1 "<source file name>"`. The header line is recognized by most
+      editors so that error reports are directed to the original file rather than the
+      copied file. *)
+
   val run : [< `S of string | `Split of string ] list -> [ `Action ] repr
   (** [run [`S prog; `S arg1; `S arg2; ...]] runs the program [prog] and gives it arguments [arg1; arg2; ...]. *)
 

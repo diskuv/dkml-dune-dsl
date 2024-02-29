@@ -1,3 +1,7 @@
+## Pending
+
+* Add `copy_with_source_directive` which implements the `copy#` action.
+
 ## 0.1.3
 
 * Allow DkmlDuneDslShow to be used programmatically

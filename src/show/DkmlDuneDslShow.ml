@@ -274,6 +274,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let progn l args = _list ([ _atom "progn" ] @ _spread args l)
   let copy ~src ~dest args = _vararg_of_string ~args "copy" [ src; dest ]
+  let copy_with_source_directive ~src ~dest args = _vararg_of_string ~args "copy#" [ src; dest ]
   let run l args = _vararg_of_splittable_string ~args "run" l
 
   let diff ~actual ~expected args =
