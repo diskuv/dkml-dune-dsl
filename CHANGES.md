@@ -1,5 +1,6 @@
 ## Pending
 
+* Add `package` to `executable` and `library`
 * Add `copy_with_source_directive` which implements the `copy#` action.
 
 ## 0.1.3

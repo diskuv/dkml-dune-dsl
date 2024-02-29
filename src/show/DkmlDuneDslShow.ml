@@ -306,6 +306,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
 
   let public_name s args = _arg_of_string ~args "public_name" s
   let name s args = _arg_of_string ~args "name" s
+  let package s args = _arg_of_string ~args "package" s
 
   let libraries l args =
     _list

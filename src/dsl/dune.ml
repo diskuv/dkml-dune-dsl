@@ -306,7 +306,11 @@ module type SYM = sig
       There can be additional modules in the current directory; you only need to specify the entry point.
       Given an {!executable} stanza with [(name <name>)], Dune will know how to build ["<name>.exe"].
 
-*)
+    *)
+
+  val package : string -> [< `Executable | `Library ] repr
+  (** [package] specifies the package the library or executable is part of it when a {!public_name}
+      field is used. *)
 
   val libraries :
     [< `S of string | `Split of string ] list ->
