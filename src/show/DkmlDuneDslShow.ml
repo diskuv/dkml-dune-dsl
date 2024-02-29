@@ -121,7 +121,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
       > quote it: ("x" y z).
 
       So:
-      
+
       + all one-element lists are promoted into atoms (which is not sufficient by itself)
       + all lists with an atom as the first argument are prepended with the empty set
         expression (:standard \ :standard)
@@ -477,6 +477,7 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
   (** {3 Install} *)
 
   let section s args = _arg_of_string ~args "section" s
+  let install_package s args = _arg_of_string ~args "package" s
   let install_files l args = _list ([ _atom "files" ] @ _spread args l)
 
   let destination_file ~filename ~destination args =

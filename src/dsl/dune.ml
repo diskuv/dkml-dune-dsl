@@ -551,6 +551,9 @@ module type SYM = sig
       - ["(site (<package> <site>))"] installs in the <site> directory of <package>. If the prefix isn't the same as the one used when installing <package>, <package> won't find the files.  
   *)
 
+  val install_package : string -> [ `Install ] repr
+  (** [install_package] specifies the package the install rule is part of. *)
+
   val install_files : [ `InstallDestination ] repr list -> [ `Install ] repr
   (** {{:https://dune.readthedocs.io/en/stable/dune-files.html#install-1}}. *)
 
