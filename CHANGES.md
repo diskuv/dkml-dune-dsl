@@ -3,6 +3,8 @@
 * Add `package` to `executable` and `library`
 * Add `install_package` to `install`
 * Add `copy_with_source_directive` which implements the `copy#` action.
+* Add `flags` and `ocamlc_flags` to complement existing `ocamlopt_flags`.
+  Type has changed but not a breaking change since `ocamlopt_flags` was previously unusable (lacked type constructor).
 
 ## 0.1.3
 

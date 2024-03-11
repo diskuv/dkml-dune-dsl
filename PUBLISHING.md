@@ -15,6 +15,7 @@
    ```shell
    VERSION=$(awk '$1=="(version" {print $2}' dune-project | tr -d ')')
    git push origin $VERSION
+   opam install dune-release
    dune-release distrib
    dune-release publish distrib
    dune-release opam pkg

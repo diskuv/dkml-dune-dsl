@@ -349,7 +349,17 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     let final_ordset = ordset args in
     _arg_of_ordset "modules" final_ordset
 
-  let ocamlopt_flags l args = _list ([ _atom "ocamlopt_flags" ] @ _spread args l)
+  let flags (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "flags" final_ordset
+
+  let ocamlc_flags (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "ocamlc_flags" final_ordset
+
+  let ocamlopt_flags (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "ocamlopt_flags" final_ordset
 
   let wrapped b _args =
     _list [ _atom "wrapped"; _atom (if b then "true" else "false") ]

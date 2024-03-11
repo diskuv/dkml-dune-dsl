@@ -398,8 +398,17 @@ module type SYM = sig
       run and doesn't require the C stubs to be installed as shared object files.
   *)
 
+  val flags :
+    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [flags] are passed to both [ocamlc] and [ocamlopt] *)
+
+  val ocamlc_flags :
+    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [ocamlc_flags] are passed to [ocamlc] *)
+
   val ocamlopt_flags :
-    [ `OCamlOptFlag ] repr list -> [< `Executable | `Library ] repr
+    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [ocamlopt_flags] are passed to [ocamlopt] *)
 
   val wrapped : bool -> [< `Executable | `Library ] repr
   (** [wrapped false] or [wrapped true] specifies whether the library modules should be available only
