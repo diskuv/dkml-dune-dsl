@@ -28,7 +28,7 @@
     supports parameterized strings. For example, if you were using the ["dkml-dune-dsl-show"] interpreter and configured
     it with a JSON parameter file, you could use [`Split "{{#libraries}} {{library}} {{/libraries}}"] and
     the ["dkml-dune-dsl-show"] interpreter would:
-    
+
     + concatenate all of the [libraries] JSON array from the JSON parameter file into a space separated list of libraries
     + [`Split] would then split the space separated list of libraries into the individual libraries.
 *)
@@ -64,14 +64,14 @@ module type SYM = sig
 
   val install : [ `Install ] repr list -> [ `Stanza ] repr
   (** [install] copies freshly built artifacts from the workspace to the system.
-      
+
       The install stanza takes three pieces of information:
 
       + the list of files to install
       + the package to attach these files. (This field is optional if your project contains a single package.)
       + the {!section} in which the files will be installed
 
-      See {!section-Install} for how to specify the three pieces of information. 
+      See {!section-Install} for how to specify the three pieces of information.
     *)
 
   val pragma : string -> [ `Stanza ] repr -> [ `Stanza ] repr
@@ -139,7 +139,7 @@ module type SYM = sig
       The mapping between the raw Dune expressions and the DSL (OCaml) is:
 
       * [template] is a string template, like ["%{ocaml-config:system}"]
-      * [not] is the 
+      * [not] is the
     *)
 
   val template : string -> [ `BooleanLanguage ] repr
@@ -196,11 +196,11 @@ module type SYM = sig
 
   val glob_files : string -> [ `Dep ] repr
   (** [glob_files glob] depends on all files matched by [glob].
-      
+
       You can use globs to declare dependencies on a set of files. Note that globs will
       match files that exist in the source tree as well as buildable targets, so for instance you
       can depend on ["*.cmi"].
-      
+
       The glob syntax is interpreted as follows:
 
       - ["\\<char>"] matches exactly ["<char>"], even if it’s a special character (["*"], ["?"], ...).
@@ -281,7 +281,7 @@ module type SYM = sig
   val public_name : string -> [< `Executable | `Library ] repr
   (** [public_name] is the name under which the library can be referred as a dependency when it is installed outside of
       the current workspace, or is the name of the executable when it is installed outside of the current workspace.
-      
+
       {b [public_name] for Libraries}
 
       Without a [(public_name ...)] field the library won’t be installed by Dune. The public name
@@ -289,14 +289,14 @@ module type SYM = sig
 
       {b [public_name] for Executables}
 
-      Without a [(public_name ...)] field the executable won’t be installed by Dune. 
+      Without a [(public_name ...)] field the executable won’t be installed by Dune.
     *)
 
   val name : string -> [< `Executable | `Library ] repr
   (** [name] is the module name that contains the executable’s main entry point, or the real name of the library.
-  
+
       {b [name] for Libraries}
-      
+
       It determines the names of the archive files generated for the library as well as the module name under
       which the library will be available, unless [(wrapped false)] is used (see {!wrapped}). It must be a
       valid OCaml module name, but it doesn’t need to start with an uppercase letter.
@@ -448,6 +448,10 @@ module type SYM = sig
       + second step of code generation in parallel with compilation
     *)
 
+  val preprocess_action : [ `Action ] repr -> [ `PreprocessSpec ] repr
+  (** [preprocess_action <action>] is an action that reads the file given as a dependency named
+      ["input-file"] and outputs the preprocessed file on its standard output. *)
+
   val future_syntax : [ `PreprocessSpec ] repr
   (** [future_syntax] is equivalent to {!no_preprocessing} when using one of the most recent
       versions of the compiler. When using an older one, it is a shim preprocessor that backports
@@ -531,14 +535,14 @@ module type SYM = sig
       is enabled after variant resolution if no suitable implementation has been found. *)
 
   (** {3:Executables Executables Only}
-      
+
       As of this version there are no executable-only clauses. *)
 
   (** {3:Install Install} *)
 
   val section : string -> [ `Install ] repr
   (** [section "share"] is the section in which the files will be installed.
-      
+
       The following sections are available:
 
       - ["lib"] installs by default to ["/lib/<pkgname>/"]
@@ -557,7 +561,7 @@ module type SYM = sig
       - ["misc"] requires files to specify an absolute destination. It will only work when used with opam and the user will be prompted before the installation when it's done via opam. It is deprecated.
 
       The following sections are not yet available in Dune DSL:
-      - ["(site (<package> <site>))"] installs in the <site> directory of <package>. If the prefix isn't the same as the one used when installing <package>, <package> won't find the files.  
+      - ["(site (<package> <site>))"] installs in the <site> directory of <package>. If the prefix isn't the same as the one used when installing <package>, <package> won't find the files.
   *)
 
   val install_package : string -> [ `Install ] repr

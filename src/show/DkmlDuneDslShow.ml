@@ -380,6 +380,8 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     (* Dune does not accept empty-arg (preprocess (staged_pps)) so we remove it *)
     _vararg_of_splittable_string ~none_when_empty:() ~args "staged_pps" l
 
+  let preprocess_action a args = _list [ _atom "action"; a args ]
+
   let future_syntax _args = _atom "future_syntax"
 
   (** {4 Ordered Sets} *)
