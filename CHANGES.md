@@ -1,6 +1,6 @@
 ## Pending
 
-* Add `package` to `executable` and `library`
+* Add `package` and `private_modules` to `executable` and `library`
 * Add `install_package` to `install`
 * Add `copy_with_source_directive` which implements the `copy#` action.
 * Add `flags` and `ocamlc_flags` to complement existing `ocamlopt_flags`.

@@ -330,7 +330,20 @@ module type SYM = sig
       See {!section-"Ordered-Sets"} for the operations you can perform.
     *)
 
-  type compilation_mode =
+    val private_modules : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+    (** [private_modules ordered_set] specifies a list of modules that will be
+        marked as private.
+        
+        Private modules are inaccessible from outside the libraries they are
+        defined in. Note that the [private_modules] field is not merged in
+        [modules], which represents the total set of modules in a library. If a
+        directory has more than one stanza and thus a [modules] field must be
+        specified, [ordered_set] still needs to be added in [modules].
+  
+        See {!section-"Ordered-Sets"} for the operations you can perform.
+      *)
+  
+    type compilation_mode =
     | Byte
     | Native
     | Best

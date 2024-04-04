@@ -349,6 +349,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     let final_ordset = ordset args in
     _arg_of_ordset "modules" final_ordset
 
+  let private_modules (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "private_modules" final_ordset
+
   let flags (ordset : [ `OrderedSet ] repr) args =
     let final_ordset = ordset args in
     _arg_of_ordset "flags" final_ordset
