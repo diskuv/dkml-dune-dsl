@@ -1,4 +1,4 @@
-## Pending
+## 0.1.4
 
 * Add `package` and `private_modules` to `executable` and `library`
 * Add `install_package` to `install`
