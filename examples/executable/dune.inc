@@ -3,4 +3,5 @@
 (executable
   (name    example)
   (modules example)
-  (modes byte (best exe)))
+  (modes byte (best exe))
+  (link_flags (:standard \ :standard) -I .))

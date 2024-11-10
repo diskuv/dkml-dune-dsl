@@ -10,6 +10,7 @@ module Build (I : Dune.SYM) = struct
           name "example";
           modules (set_of [ "example" ]);
           modes [ `Byte; `Mode (Best, Exe) ];
+          link_flags (set_of [ "-I"; "." ]);
         ];
     ]
 end

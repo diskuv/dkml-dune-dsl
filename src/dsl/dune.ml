@@ -330,8 +330,8 @@ module type SYM = sig
       See {!section-"Ordered-Sets"} for the operations you can perform.
     *)
 
-    val private_modules : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
-    (** [private_modules ordered_set] specifies a list of modules that will be
+  val private_modules : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [private_modules ordered_set] specifies a list of modules that will be
         marked as private.
         
         Private modules are inaccessible from outside the libraries they are
@@ -342,8 +342,8 @@ module type SYM = sig
   
         See {!section-"Ordered-Sets"} for the operations you can perform.
       *)
-  
-    type compilation_mode =
+
+  type compilation_mode =
     | Byte
     | Native
     | Best
@@ -411,17 +411,17 @@ module type SYM = sig
       run and doesn't require the C stubs to be installed as shared object files.
   *)
 
-  val flags :
-    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
-  (** [flags] are passed to both [ocamlc] and [ocamlopt] *)
+  val flags : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [flags] are passed to both [ocamlc] and [ocamlopt]. *)
 
-  val ocamlc_flags :
-    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
-  (** [ocamlc_flags] are passed to [ocamlc] *)
+  val ocamlc_flags : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [ocamlc_flags] are passed to [ocamlc]. *)
 
-  val ocamlopt_flags :
-    [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
-  (** [ocamlopt_flags] are passed to [ocamlopt] *)
+  val ocamlopt_flags : [ `OrderedSet ] repr -> [< `Executable | `Library ] repr
+  (** [ocamlopt_flags] are passed to [ocamlopt]. *)
+
+  val link_flags : [ `OrderedSet ] repr -> [< `Executable ] repr
+  (** [link_flags] are additional flags to pass to the linker. *)
 
   val wrapped : bool -> [< `Executable | `Library ] repr
   (** [wrapped false] or [wrapped true] specifies whether the library modules should be available only
