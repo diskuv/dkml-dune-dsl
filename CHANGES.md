@@ -1,3 +1,9 @@
+# Changes
+
+## 0.1.5
+
+* Add `(:include sexpfile)` to ordered sets
+
 ## 0.1.4
 
 * Add `package` and `private_modules` to `executable` and `library`

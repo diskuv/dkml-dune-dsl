@@ -16,4 +16,5 @@ module Build (I : Dune.SYM) = struct
       library [ name "example2"; virtual_modules (set_of [ "example2" ]) ];
       rule [ rule_enabled_if (template "true") ];
     ]
+  [@@warning "-unused-value-declaration"]
 end

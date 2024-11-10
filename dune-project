@@ -1,8 +1,8 @@
-(lang dune 2.9)
+(lang dune 3.13)
 
 (name dkml-dune-dsl)
 
-(version 0.1.4)
+(version 0.1.5)
 
 (generate_opam_files true)
 

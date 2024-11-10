@@ -492,8 +492,8 @@ module type SYM = sig
         The ["param-sets"] field of your parameter file will be available if you use the [pragma "once" ...]; see {!pragma}. With
         the example Mustache expression, Mustache will collect all of the [module] fields of your parameter file into a single string,
         and then [split] will split those modules by atoms.
-      - [(difference (standard) (set_of ["foo"]))] which is all the standard arguments (ex. standard modules) except for ["foo"]. In a real
-        Dune file would be written as ["(:standard \ foo)"]
+      - [(difference (standard) (set_of ["foo"]))] which is all the standard arguments (ex. standard modules) except for ["foo"]. In a
+        Dune file it would be written as ["(:standard \ foo)"]
 
       It is allowed grammatically but is highly discouraged to use [split ":standard \ compat"]. Instead use
       [difference (standard) (each ["compat"])] so the meaning is clear and so that DSL interpreters are exposed to what you
@@ -524,6 +524,14 @@ module type SYM = sig
   val difference :
     [ `OrderedSet ] repr -> [ `OrderedSet ] repr -> [ `OrderedSet ] repr
   (** [difference a_set b_set] is all the arguments from [a_set] that are not in [b_set] *)
+
+  val include_set : string -> [ `OrderedSet ] repr
+  (** [include_set filename] is all the arguments inside the s-exp file
+      [filename].
+      
+      In a Dune file it would be written as ["(:include \"<filename>\")"].
+      
+      Requires ["(lang dune 3.13)"] or higher. *)
 
   (** {3:Libraries Libraries Only} *)
 

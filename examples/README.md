@@ -14,6 +14,7 @@ using the boilerplate in ["dune"].
 | [executable]            | Create an executable                                          |
 | [basic-param-strings]   | Adds two parameters to [basic-no-param]                       |
 | [ordered-set]           | An example using Ordered Sets                                 |
+| [ordered-set-include]   | An example using Ordered Sets and `(:include file)            |
 | [pragma-once-simple]    | Simple use of `(pragma once ...)`                             |
 | [pragma-once-aggregate] | Adds an aggregate Mustache expression to [pragma-once-simple] |
 | [toplevel-param-bad]    | Fails when `_` is not a prefix of your custom parameter name  |

@@ -4,7 +4,7 @@
   (with-stdout-to
    %{target}
    (echo
-    "module M = My_dune.Build (DkmlDuneDslShow.I) \n let () = print_string @@ DkmlDuneDslShow.plain_hum M.res \n"))))
+    "open DkmlDuneDslShow \n module M = My_dune.Build (I) \n let () = print_string (plain_hum_with_params no_parameters_json M.res) \n"))))
 
 (executable
  (name dune_inc)

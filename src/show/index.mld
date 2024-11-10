@@ -22,8 +22,9 @@ All of that is represented by the following Dune snippet:
    %{target}
    (echo
     ; YOU: Change "My_dune" to the name of your Dune DSL expression module
-    "module M = My_dune.Build (DkmlDuneDslShow.I)
-     let () = print_string @@ DkmlDuneDslShow.plain_hum M.res"))))
+    "open DkmlDuneDslShow
+     module M = My_dune.Build (I)
+     let () = print_string (plain_hum M.res)"))))
 
 (executable
  (name dune_inc)
