@@ -4,6 +4,7 @@
 
 * Add `(:include sexpfile)` to ordered sets
 * Add `(link_flags)` to `(executable)`
+* Add `(library_flags)` to `(library)`
 
 ## 0.1.4
 

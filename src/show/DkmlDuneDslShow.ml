@@ -380,6 +380,10 @@ module I : DkmlDuneDsl.Dune.SYM with type 'a repr = args -> out = struct
     let final_ordset = ordset args in
     _arg_of_ordset "link_flags" final_ordset
 
+  let library_flags (ordset : [ `OrderedSet ] repr) args =
+    let final_ordset = ordset args in
+    _arg_of_ordset "library_flags" final_ordset
+
   let wrapped b _args =
     _list [ _atom "wrapped"; _atom (if b then "true" else "false") ]
 

@@ -423,6 +423,12 @@ module type SYM = sig
   val link_flags : [ `OrderedSet ] repr -> [< `Executable ] repr
   (** [link_flags] are additional flags to pass to the linker. *)
 
+  val library_flags : [ `OrderedSet ] repr -> [< `Library ] repr
+  (** [library_flags] are additional flags passed to ocamlc and ocamlopt
+      when building the library archive files.
+
+      You can use this to specify ["-linkall"], for instance. *)
+
   val wrapped : bool -> [< `Executable | `Library ] repr
   (** [wrapped false] or [wrapped true] specifies whether the library modules should be available only
       through the top-level library module, or if they should all be exposed at the top level.
